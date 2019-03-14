@@ -12,8 +12,12 @@ class Client:
         self.api_key = api_key
         self.city = city
 
-    def connect(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def get_request(self):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.gaierror as err:
+            print("Socket creation failed with error {0}".format(err))
+            exit(1)
         s.connect((Client.HOST, Client.PORT))
         req = "GET /data/2.5/weather?q={0}&APPID={1} HTTP/1.1\n".format(self.city, self.api_key)
         req += "Host: {0}\n".format(Client.HOST)
@@ -23,46 +27,62 @@ class Client:
         s.close()
         return result.decode()
 
-    def to_json(self):
-        response = self.connect()
+    def convert_to_json(self):
+        response = self.get_request()
         response = response.split("\r\n\r\n")[1]
+        get_status_code = json.loads(response.split("\r\n\r\n")[0])
+        self.check_response(get_status_code)
         json_object = json.loads(response)
         return json_object
 
-    def prepare_info(self):
-        r = self.to_json()
+    @staticmethod
+    def check_response(get_status_code):
+        if get_status_code["cod"] != 200:
+            print(get_status_code["message"])
+            exit(1)
+
+    def prepare_weather_info(self):
+        json_response = self.convert_to_json()
         info = {}
-        info["overcast"] = r["weather"][0]["description"]
-        info["temp"] = round(r["main"]["temp"] - 273.15, 1)
-        info["humidity"] = r["main"]["humidity"]
-        info["pressure"] = r["main"]["pressure"]
-        info["wind-speed"] = r["wind"]["speed"]
         try:
-            info["wind-deg"] = r["wind"]["deg"]
+            info["overcast"] = json_response["weather"][0]["main"].lower()
+        except KeyError:
+            print("Weather is not available for this city")
+            exit(1)
+        info["temp"] = round(json_response["main"]["temp"] - 273.15, 1)
+        info["humidity"] = json_response["main"]["humidity"]
+        info["pressure"] = json_response["main"]["pressure"]
+        info["wind-speed"] = json_response["wind"]["speed"]
+        try:
+            info["wind-deg"] = json_response["wind"]["deg"]
         except KeyError:
             info["wind-deg"] = "n/a"
         return info
 
 
-if __name__ == "__main__":
-    # TODO: nepovolit i trislovne nazvy? Palma de Mallorca
-    if len(sys.argv) == 4:
-        city = sys.argv[2] + " " + sys.argv[3]
-    else:
-        city = sys.argv[2]
-    if len(sys.argv) > 4:
-        print("Usage: python xchlup08.py <api_key> <city>", file=sys.stderr)
-        sys.exit(1)
-    c = Client(sys.argv[1], city)
-    info_to_print = c.prepare_info()
+def main():
+    api_key = sys.argv[1]
+    city = sys.argv[2:]
+    city = " ".join(city)
+    c = Client(api_key, city)
+    current_weather = c.prepare_weather_info()
     print(
-        "{0}\novercast {1}\ntemp:{2}\xb0C\nhumidity:{3}%\npressure:{4} hPa\nwind-speed: {5}km/h\nwind-deg: {6}".format(
+        "{0}\novercast {1}"
+        "\ntemp: {2}°C"
+        "\nhumidity: {3}%"
+        "\npressure: {4}hPa"
+        "\nwind-speed: {5}km/h"
+        "\nwind-deg: {6}".format(
             c.city,
-            info_to_print["overcast"],
-            info_to_print["temp"],
-            info_to_print["humidity"],
-            info_to_print["pressure"],
-            info_to_print["wind-speed"],
-            info_to_print["wind-deg"],
+            current_weather["overcast"],
+            current_weather["temp"],
+            current_weather["humidity"],
+            current_weather["pressure"],
+            current_weather["wind-speed"],
+            current_weather["wind-deg"],
         )
     )
+
+
+if __name__ == "__main__":
+    main()
