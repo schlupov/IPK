@@ -23,6 +23,10 @@ list
 -
 sstream
 -
+cstring
+-
+csignal
+-
 
 /home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
 

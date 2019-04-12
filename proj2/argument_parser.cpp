@@ -6,6 +6,8 @@
 #include <iostream>
 #include <list>
 #include <sstream>
+#include <cstring>
+#include <csignal>
 
 using namespace std;
 
@@ -14,11 +16,18 @@ class Arguments
     public:
         string udpPort;
         string tcpPort;
+        string name;
+        string interface;
 
     void PrintArguments()
     {
         cout << "UDP ports are: " << udpPort << endl;
-        cout << "TCP ports are: " << tcpPort;
+        cout << "TCP ports are: " << tcpPort << endl;
+        cout << "Domain name or IP adress is: " << name << endl;
+        if (!interface.empty())
+        {
+            cout << "Interface is: " << interface;
+        }
     }
 
     void GetTCPPorts(list <int>& tcpPorts)
@@ -47,10 +56,30 @@ class Arguments
 void PrintHelp()
 {
     std::cout <<
+              "Usage:\n"
               "-pu <port-ranges>: UDP ports to scan\n"
-              "-pt <port-ranges> [<domain-name> | <IP-address>]: TCP ports to scan\n"
-              "{-i <interface>}: optional arguments for setting an interface\n"
-              "-h:              Show help\n";
+              "-pt <port-ranges> [<domain-name> | <IP-address>]: TCP ports to scan, you have set domain name or IP adress!\n"
+              "{-i <interface>}: Optional argument for setting an interface\n"
+              "-h: Show help\n";
+    exit(1);
+}
+
+void PrintPorts(Arguments programArguments)
+{
+    list <int> tcpPorts;
+    list <int> udpPorts;
+    programArguments.GetUDPPorts(tcpPorts);
+    for (int i: tcpPorts) {
+        cout << i << endl;
+    }
+    programArguments.GetTCPPorts(udpPorts);
+    for (int i: udpPorts) {
+        cout << i << endl;
+    }
+}
+
+void signalHandler(int signum) {
+    PrintHelp();
     exit(1);
 }
 
@@ -65,6 +94,20 @@ void ProcessArguments(int argc, char** argv)
             {nullptr, no_argument, nullptr, 0}
     };
     Arguments programArguments{};
+    string adress;
+
+    for (int count=0; count < argc; ++count)
+    {
+        if (strcmp(argv[count], "-pt") == 0)
+        {
+            signal(SIGSEGV, signalHandler);
+            if (strcmp(argv[count+2], "-pu") == 0)
+            {
+                PrintHelp();
+            }
+            adress = argv[count + 2];
+        }
+    }
 
 
     while (true)
@@ -82,22 +125,15 @@ void ProcessArguments(int argc, char** argv)
             case 'pt':
                 programArguments.tcpPort = optarg;
                 break;
+            case 'i':
+                programArguments.interface = optarg;
+                break;
             case 'h':
             case '?':
             default:
                 PrintHelp();
                 break;
         }
-    }
-    
-    list <int> tcpPorts;
-    list <int> udpPorts;
-    programArguments.GetUDPPorts(tcpPorts);
-    for (int i: tcpPorts) {
-        cout << i << endl;
-    }
-    programArguments.GetTCPPorts(udpPorts);
-    for (int i: udpPorts) {
-        cout << i << endl;
+        programArguments.name = adress;
     }
 }
