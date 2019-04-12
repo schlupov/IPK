@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.cpp
+unistd.h
+-
+cstdlib
+-
+cstdio
+-
+string
+-
+getopt.h
+-
+iostream
+-
+list
+-
+sstream
+-
+
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
+
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/ipk-scan.cpp
+iostream
+-
+argument_parser.h
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
+

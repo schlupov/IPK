@@ -1,0 +1,3 @@
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/proj2.dir
