@@ -8,6 +8,7 @@
 #include <sstream>
 #include <cstring>
 #include <csignal>
+#include "argument_parser.h"
 
 using namespace std;
 
@@ -30,25 +31,47 @@ class Arguments
         }
     }
 
-    void GetTCPPorts(list <int>& tcpPorts)
+    void GetTCPPorts(list <int> &tcpPorts)
     {
-        char delimiter = ',';
+        char delimiter;
+        if (tcpPort.find('-') != std::string::npos) {
+            delimiter = '-';
+        }
+        else
+        {
+            delimiter = ',';
+        }
         std::stringstream ss(tcpPort);
         std::string token;
-        while (std::getline(ss, token, delimiter)) {
-            int port = std::stoi(token);
-            tcpPorts.push_back(port);
-        }
+        GetPort(tcpPorts, delimiter, ss, token);
     }
 
-    void GetUDPPorts(list <int>& udpPorts)
+    void GetUDPPorts(list <int> &udpPorts)
     {
-        char delimiter = ',';
+        char delimiter;
+        if (udpPort.find('-') != std::string::npos) {
+            delimiter = '-';
+        }
+        else
+        {
+            delimiter = ',';
+        }
         std::stringstream ss(udpPort);
         std::string token;
-        while (std::getline(ss, token, delimiter)) {
-            int port = std::stoi(token);
-            udpPorts.push_back(port);
+        GetPort(udpPorts, delimiter, ss, token);
+    }
+
+    void GetPort(list<int> &ports, char delimiter, stringstream &ss, string &token) const {
+        while (getline(ss, token, delimiter)) {
+            try
+            {
+                int port = stoi(token);
+                ports.push_back(port);
+            }
+            catch(invalid_argument& exception)
+            {
+                PrintHelp();
+            }
         }
     }
 };
@@ -68,13 +91,13 @@ void PrintPorts(Arguments programArguments)
 {
     list <int> tcpPorts;
     list <int> udpPorts;
-    programArguments.GetUDPPorts(tcpPorts);
-    for (int i: tcpPorts) {
-        cout << i << endl;
-    }
-    programArguments.GetTCPPorts(udpPorts);
+    programArguments.GetUDPPorts(udpPorts);
     for (int i: udpPorts) {
-        cout << i << endl;
+        cout << "UDP " << i << endl;
+    }
+    programArguments.GetTCPPorts(tcpPorts);
+    for (int i: tcpPorts) {
+        cout << "TCP "<< i << endl;
     }
 }
 
@@ -95,6 +118,10 @@ void ProcessArguments(int argc, char** argv)
     };
     Arguments programArguments{};
     string adress;
+
+    if (argc > 8) {
+        PrintHelp();
+    }
 
     for (int count=0; count < argc; ++count)
     {
@@ -136,4 +163,5 @@ void ProcessArguments(int argc, char** argv)
         }
         programArguments.name = adress;
     }
+    PrintPorts(programArguments);
 }
