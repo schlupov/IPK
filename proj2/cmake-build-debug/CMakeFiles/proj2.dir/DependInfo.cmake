@@ -6,6 +6,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_CHECK_CXX
   "/home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.cpp" "/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/proj2.dir/argument_parser.cpp.o"
   "/home/schlupov/school/ctvrty_semestr/IPK/proj2/ipk-scan.cpp" "/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/proj2.dir/ipk-scan.cpp.o"
+  "/home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.cpp" "/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/proj2.dir/tcp.cpp.o"
+  "/home/schlupov/school/ctvrty_semestr/IPK/proj2/udp.cpp" "/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/proj2.dir/udp.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

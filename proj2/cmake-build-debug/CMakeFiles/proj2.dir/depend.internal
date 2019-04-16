@@ -3,6 +3,18 @@
 
 CMakeFiles/proj2.dir/argument_parser.cpp.o
  /home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.cpp
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
 CMakeFiles/proj2.dir/ipk-scan.cpp.o
  /home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
  /home/schlupov/school/ctvrty_semestr/IPK/proj2/ipk-scan.cpp
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.h
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/udp.h
+CMakeFiles/proj2.dir/tcp.cpp.o
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.cpp
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.h
+CMakeFiles/proj2.dir/udp.cpp.o
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/argument_parser.h
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.h
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/udp.cpp
+ /home/schlupov/school/ctvrty_semestr/IPK/proj2/udp.h

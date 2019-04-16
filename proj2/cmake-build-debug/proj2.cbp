@@ -89,7 +89,22 @@
 		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/ipk-scan.cpp">
 			<Option target="proj2"/>
 		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.cpp">
+			<Option target="proj2"/>
+		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/tcp.h">
+			<Option target="proj2"/>
+		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/udp.cpp">
+			<Option target="proj2"/>
+		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/udp.h">
+			<Option target="proj2"/>
+		</Unit>
 		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/proj2/FindPCAP.cmake">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 	</Project>

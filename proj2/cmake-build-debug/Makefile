@@ -177,6 +177,60 @@ ipk-scan.cpp.s:
 	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/ipk-scan.cpp.s
 .PHONY : ipk-scan.cpp.s
 
+tcp.o: tcp.cpp.o
+
+.PHONY : tcp.o
+
+# target to build an object file
+tcp.cpp.o:
+	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/tcp.cpp.o
+.PHONY : tcp.cpp.o
+
+tcp.i: tcp.cpp.i
+
+.PHONY : tcp.i
+
+# target to preprocess a source file
+tcp.cpp.i:
+	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/tcp.cpp.i
+.PHONY : tcp.cpp.i
+
+tcp.s: tcp.cpp.s
+
+.PHONY : tcp.s
+
+# target to generate assembly for a file
+tcp.cpp.s:
+	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/tcp.cpp.s
+.PHONY : tcp.cpp.s
+
+udp.o: udp.cpp.o
+
+.PHONY : udp.o
+
+# target to build an object file
+udp.cpp.o:
+	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/udp.cpp.o
+.PHONY : udp.cpp.o
+
+udp.i: udp.cpp.i
+
+.PHONY : udp.i
+
+# target to preprocess a source file
+udp.cpp.i:
+	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/udp.cpp.i
+.PHONY : udp.cpp.i
+
+udp.s: udp.cpp.s
+
+.PHONY : udp.s
+
+# target to generate assembly for a file
+udp.cpp.s:
+	$(MAKE) -f CMakeFiles/proj2.dir/build.make CMakeFiles/proj2.dir/udp.cpp.s
+.PHONY : udp.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -192,6 +246,12 @@ help:
 	@echo "... ipk-scan.o"
 	@echo "... ipk-scan.i"
 	@echo "... ipk-scan.s"
+	@echo "... tcp.o"
+	@echo "... tcp.i"
+	@echo "... tcp.s"
+	@echo "... udp.o"
+	@echo "... udp.i"
+	@echo "... udp.s"
 .PHONY : help
 
 

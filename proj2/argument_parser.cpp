@@ -1,80 +1,58 @@
-#include <unistd.h>
-#include <cstdlib>
-#include <cstdio>
-#include <string>
-#include <getopt.h>
-#include <iostream>
-#include <list>
-#include <sstream>
-#include <cstring>
-#include <csignal>
 #include "argument_parser.h"
 
-using namespace std;
-
-class Arguments
+void Arguments::PrintArguments()
 {
-    public:
-        string udpPort;
-        string tcpPort;
-        string name;
-        string interface;
+    std::cout << "UDP ports are: " << udpPort << std::endl;
+    std::cout << "TCP ports are: " << tcpPort << std::endl;
+    std::cout << "Domain name or IP adress is: " << name << std::endl;
+}
 
-    void PrintArguments()
+void Arguments::GetTCPPorts(std::list <int> &tcpPorts, bool &dash)
+{
+    char delimiter;
+    if (tcpPort.find('-') != std::string::npos) {
+        delimiter = '-';
+        dash = true;
+    }
+    else
     {
-        cout << "UDP ports are: " << udpPort << endl;
-        cout << "TCP ports are: " << tcpPort << endl;
-        cout << "Domain name or IP adress is: " << name << endl;
-        if (!interface.empty())
-        {
-            cout << "Interface is: " << interface;
-        }
+        delimiter = ',';
     }
+    std::stringstream ss(tcpPort);
+    std::string token;
+    GetPort(tcpPorts, delimiter, ss, token);
+}
 
-    void GetTCPPorts(list <int> &tcpPorts)
+void Arguments::GetUDPPorts(std::list <int> &udpPorts, bool &dash)
+{
+    char delimiter;
+    if (udpPort.find('-') != std::string::npos) {
+        delimiter = '-';
+        dash = true;
+    }
+    else
     {
-        char delimiter;
-        if (tcpPort.find('-') != std::string::npos) {
-            delimiter = '-';
-        }
-        else
-        {
-            delimiter = ',';
-        }
-        std::stringstream ss(tcpPort);
-        std::string token;
-        GetPort(tcpPorts, delimiter, ss, token);
+        delimiter = ',';
     }
+    std::stringstream ss(udpPort);
+    std::string token;
+    GetPort(udpPorts, delimiter, ss, token);
+}
 
-    void GetUDPPorts(list <int> &udpPorts)
-    {
-        char delimiter;
-        if (udpPort.find('-') != std::string::npos) {
-            delimiter = '-';
-        }
-        else
+void Arguments::GetPort(std::list<int> &ports, char delimiter, std::stringstream &ss, std::string &token)
+{
+    while (getline(ss, token, delimiter)) {
+        try
         {
-            delimiter = ',';
+            int port = stoi(token);
+            ports.push_back(port);
         }
-        std::stringstream ss(udpPort);
-        std::string token;
-        GetPort(udpPorts, delimiter, ss, token);
-    }
-
-    void GetPort(list<int> &ports, char delimiter, stringstream &ss, string &token) const {
-        while (getline(ss, token, delimiter)) {
-            try
-            {
-                int port = stoi(token);
-                ports.push_back(port);
-            }
-            catch(invalid_argument& exception)
-            {
-                PrintHelp();
-            }
+        catch(std::invalid_argument &exception)
+        {
+            PrintHelp();
         }
     }
-};
+}
 
 void PrintHelp()
 {
@@ -87,37 +65,22 @@ void PrintHelp()
     exit(1);
 }
 
-void PrintPorts(Arguments programArguments)
-{
-    list <int> tcpPorts;
-    list <int> udpPorts;
-    programArguments.GetUDPPorts(udpPorts);
-    for (int i: udpPorts) {
-        cout << "UDP " << i << endl;
-    }
-    programArguments.GetTCPPorts(tcpPorts);
-    for (int i: tcpPorts) {
-        cout << "TCP "<< i << endl;
-    }
-}
-
 void signalHandler(int signum) {
     PrintHelp();
     exit(1);
 }
 
-void ProcessArguments(int argc, char** argv)
+Arguments ProcessArguments(int argc, char** argv, Arguments programArguments)
 {
     const char* const short_opts = "pu:pt:i:h";
     const  option long_options[] = {
-            {"pu", required_argument, nullptr, 'pu'},
-            {"pt", required_argument, nullptr, 'pt'},
+            {"pu", required_argument, nullptr, 'u'},
+            {"pt", required_argument, nullptr, 't'},
             {"i", optional_argument, nullptr, 'i'},
             {"h", no_argument, nullptr, 'h'},
             {nullptr, no_argument, nullptr, 0}
     };
-    Arguments programArguments{};
-    string adress;
+    std::string adress;
 
     if (argc > 8) {
         PrintHelp();
@@ -146,22 +109,22 @@ void ProcessArguments(int argc, char** argv)
 
         switch (opt)
         {
-            case 'pu':
+            case 'u':
                 programArguments.udpPort = optarg;
                 break;
-            case 'pt':
+            case 't':
                 programArguments.tcpPort = optarg;
                 break;
             case 'i':
                 programArguments.interface = optarg;
                 break;
-            case 'h':
             case '?':
+            case 'h':
             default:
                 PrintHelp();
                 break;
         }
-        programArguments.name = adress;
     }
-    PrintPorts(programArguments);
+    programArguments.name = adress;
+    return programArguments;
 }

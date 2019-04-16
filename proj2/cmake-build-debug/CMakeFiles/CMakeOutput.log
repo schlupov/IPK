@@ -609,3 +609,20 @@ gmake[1]: Leaving directory '/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmak
     Feature record: CXX_FEATURE:0cxx_variable_templates
     Feature record: CXX_FEATURE:0cxx_variadic_macros
     Feature record: CXX_FEATURE:0cxx_variadic_templates
+Performing C SOURCE FILE Test PCAP_LINKS_SOLO succeeded with the following output:
+Change Dir: /home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/gmake" "cmTC_7cd27/fast"
+gmake[1]: Entering directory '/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/CMakeTmp'
+/usr/bin/gmake -f CMakeFiles/cmTC_7cd27.dir/build.make CMakeFiles/cmTC_7cd27.dir/build
+gmake[2]: Entering directory '/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_7cd27.dir/src.c.o
+/usr/bin/cc   -DPCAP_LINKS_SOLO   -o CMakeFiles/cmTC_7cd27.dir/src.c.o   -c /home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_7cd27
+/home/schlupov/school/CLion-2018.1.1/clion-2018.1.1/bin/cmake/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7cd27.dir/link.txt --verbose=1
+/usr/bin/cc  -DPCAP_LINKS_SOLO    CMakeFiles/cmTC_7cd27.dir/src.c.o  -o cmTC_7cd27 /usr/lib64/libpcap.so 
+gmake[2]: Leaving directory '/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/CMakeTmp'
+gmake[1]: Leaving directory '/home/schlupov/school/ctvrty_semestr/IPK/proj2/cmake-build-debug/CMakeFiles/CMakeTmp'
+
+Source file was:
+int main() { return 0; }

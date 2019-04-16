@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/proj2.dir/ipk-scan.cpp.o"
   "CMakeFiles/proj2.dir/argument_parser.cpp.o"
+  "CMakeFiles/proj2.dir/udp.cpp.o"
+  "CMakeFiles/proj2.dir/tcp.cpp.o"
   "proj2.pdb"
   "proj2"
 )
