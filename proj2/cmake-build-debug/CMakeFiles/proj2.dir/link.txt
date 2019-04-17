@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/proj2.dir/ipk-scan.cpp.o CMakeFiles/proj2.dir/argument_parser.cpp.o CMakeFiles/proj2.dir/udp.cpp.o CMakeFiles/proj2.dir/tcp.cpp.o  -o proj2 /usr/lib64/libpcap.so 
