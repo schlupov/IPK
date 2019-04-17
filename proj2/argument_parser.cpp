@@ -70,6 +70,7 @@ void signalHandler(int signum) {
     exit(1);
 }
 
+
 Arguments ProcessArguments(int argc, char** argv, Arguments programArguments)
 {
     const char* const short_opts = "pu:pt:i:h";

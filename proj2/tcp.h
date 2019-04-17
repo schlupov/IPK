@@ -17,23 +17,6 @@
 #include <pcap.h>
 #include <netinet/tcp.h>
 #include <error.h>
-class TCP {
-public:
-
-    int CreateRawSocket(Arguments programArguments);
-
-    unsigned short csum(unsigned short *ptr, int nbytes);
-
-    int my_packet_handler(const u_char* packet);
-
-    int CatchPacket(pcap_t* descr, bpf_u_int32 netp);
-
-    int hostname_to_ip(std::string hostname , char* ip);
-
-    int PrepareTcpSocket(pcap_t* &handle, bpf_u_int32 &netp);
-
-    int get_ip_from_interface(const char *interface , char* ip);
-};
 struct pseudo_header_tcp
 {
     u_int32_t source_address;
@@ -41,6 +24,30 @@ struct pseudo_header_tcp
     u_int8_t placeholder;
     u_int8_t protocol;
     u_int16_t tcp_length;
+};
+class TCP {
+public:
+
+    int CreateRawSocket(const char *interface, std::string name, int port);
+
+    unsigned short csum(unsigned short *ptr, int nbytes);
+
+    int PacketHandler(const u_char *packet);
+
+    int CatchPacket(std::string name, int port, pcap_t* descr, bpf_u_int32 netp);
+
+    int hostname_to_ip(std::string hostname , char* ip);
+
+    int PrepareTcpSocket(pcap_t* &handle, bpf_u_int32 &netp);
+
+    int get_ip_from_interface(const char *interface , char* ip);
+
+    void PrepareTcpHeader(tcphdr *tcph, uint16_t port) const;
+
+    void PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin);
+
+    char *CalculateTcpChecksum(const char *source_ip, char *pseudogram, tcphdr *tcph, const sockaddr_in &sin,
+                               pseudo_header_tcp &psh);
 };
 struct sniff_ip {
     u_char ip_vhl;      /* version << 4 | header length >> 2 */
@@ -84,13 +91,5 @@ struct sniff_tcp {
     u_short th_win;                 /* window */
     u_short th_sum;                 /* checksum */
     u_short th_urp;                 /* urgent pointer */
-};
-#define ETHER_ADDR_LEN	6
-
-/* Ethernet header */
-struct sniff_ethernet {
-    u_char  ether_dhost[ETHER_ADDR_LEN];    /* destination host address */
-    u_char  ether_shost[ETHER_ADDR_LEN];    /* source host address */
-    u_short ether_type;                     /* IP? ARP? RARP? etc */
 };
 #endif //PROJ2_TCP_H

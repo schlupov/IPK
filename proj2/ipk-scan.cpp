@@ -4,18 +4,21 @@
 #include "udp.h"
 #include "tcp.h"
 
-void PrintPorts(Arguments programArguments);
-
 void CallSocket(Arguments arguments);
-int CallSocketTcp(Arguments arguments);
+int CallSocketTcp(TCP tcpSocket, int port, const char *interface, std::string name);
 
 int main(int argc, char **argv)
 {
     Arguments programArguments;
     Arguments arguments = ProcessArguments(argc, argv, programArguments);
-    //PrintPorts(arguments);
     //CallSocket(arguments);
-    CallSocketTcp(arguments);
+    std::list <int> tcpPorts;
+    bool isDashInTcpPorts = false;
+    TCP tcpSocket;
+    arguments.GetTCPPorts(tcpPorts, isDashInTcpPorts);
+    for (auto const& i : tcpPorts) {
+        CallSocketTcp(tcpSocket, i, arguments.interface, arguments.name);
+    }
     return 0;
 }
 /*
@@ -26,15 +29,15 @@ void CallSocket(Arguments arguments)
     udpSocket.CatchPacket();
 }*/
 
-int CallSocketTcp(Arguments arguments)
+int CallSocketTcp(TCP tcpSocket, int port, const char *interface, std::string name)
 {
     pcap_t* handle;
     bpf_u_int32 netp;
-    TCP tcpSocket;
     tcpSocket.PrepareTcpSocket(handle, netp);
-    tcpSocket.CreateRawSocket(std::move(arguments));
-    tcpSocket.CatchPacket(handle, netp);
-    exit(EXIT_SUCCESS);
+    tcpSocket.CreateRawSocket(interface, name, port);
+    tcpSocket.CatchPacket(name, port, handle, netp);
+
+    return 0;
 }
 
 void PrintPorts(Arguments programArguments)
