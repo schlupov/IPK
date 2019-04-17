@@ -45,22 +45,6 @@ tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.cpp
-netdb.h
--
-netinet/if_ether.h
--
-sys/ioctl.h
--
-sys/types.h
--
-sys/socket.h
--
-sys/ioctl.h
--
-netinet/in.h
--
-net/if.h
--
 tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 

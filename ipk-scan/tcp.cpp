@@ -1,16 +1,13 @@
-#include <netdb.h>
-#include <netinet/if_ether.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <net/if.h>
+/*
+*	Raw TCP sockets
+*/
+
 #include "tcp.h"
 
 pcap_t* handle;
 
-int TCP::PacketHandler(const u_char *packet) {
+int TCP::PacketHandler(const u_char *packet)
+{
     int size_ip;
     int size_tcp;
     struct sniff_ip *ip;
@@ -40,24 +37,6 @@ int TCP::PacketHandler(const u_char *packet) {
     }
 
     return 0;
-}
-
-
-
-int TCP::PrepareTcpSocket()
-{
-    char errbuf[PCAP_ERRBUF_SIZE];
-
-    handle = pcap_create("wlp4s0", errbuf);
-    if(handle == NULL)
-    {
-        printf("pcap_open_live(): %s\n",errbuf);
-        exit(1);
-    }
-
-    if (pcap_activate(handle) != 0) {
-        exit (EXIT_FAILURE);
-    }
 }
 
 int TCP::CatchPacket(std::string name, int port, int& state)
@@ -92,6 +71,7 @@ int TCP::CatchPacket(std::string name, int port, int& state)
         }
 
         int code = PacketHandler(packet);
+
         if (code == 0)
         {
             state = 0;
@@ -113,27 +93,6 @@ int TCP::CatchPacket(std::string name, int port, int& state)
     return 42;
 }
 
-void loop_breaker(int sig){
-    pcap_breakloop(handle);
-}
-
-
-unsigned short TCP::csum(unsigned short *buffer, int size)
-{
-    unsigned long cksum=0;
-    while(size >1)
-    {
-        cksum+=*buffer++;
-        size -=sizeof(unsigned short);
-    }
-    if(size)
-        cksum += *buffer;
-
-    cksum = (cksum >> 16) + (cksum & 0xffff);
-    cksum += (cksum >>16);
-    return (unsigned short)(~cksum);
-}
-
 int TCP::CreateRawSocket(const char *interface, std::string name, int port)
 {
     char receiver_ip[100];
@@ -142,11 +101,11 @@ int TCP::CreateRawSocket(const char *interface, std::string name, int port)
     char source_ip[100];
     get_ip_from_interface(interface, source_ip);
 
-    char datagram[8192];
+    char datagram[4096];
     char *pseudogram;
     int one = 1;
     const int *val = &one;
-    memset (datagram, 0, 8192);
+    memset (datagram, 0, 4096);
 
     auto *iph = (struct iphdr *) datagram;
     auto *tcph = (struct tcphdr *) (datagram + sizeof (struct iphdr));
@@ -201,7 +160,7 @@ char *TCP::CalculateTcpChecksum(const char *source_ip, char *pseudogram, tcphdr 
     memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header_tcp));
     memcpy(pseudogram + sizeof(struct pseudo_header_tcp) , tcph , sizeof(struct tcphdr));
 
-    tcph->check = csum((unsigned short*) pseudogram , psize);
+    tcph->check = ComputeCheckSum((unsigned short *) pseudogram, psize);
     return pseudogram;
 }
 
@@ -213,11 +172,11 @@ void TCP::PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *ip
     iph->id = htonl (54321);
     iph->frag_off = 0;
     iph->ttl = 255;
-    iph->protocol = 6;
+    iph->protocol = IPPROTO_TCP;
     iph->check = 0;
     iph->saddr = inet_addr ( source_ip );
     iph->daddr = sin.sin_addr.s_addr;
-    iph->check = csum((unsigned short *) datagram, (sizeof(struct iphdr) + sizeof(struct tcphdr)));
+    iph->check = ComputeCheckSum((unsigned short *) datagram, (sizeof(struct iphdr) + sizeof(struct tcphdr)));
 }
 
 void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
@@ -236,6 +195,27 @@ void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
     tcph->check = 0;
     tcph->urg_ptr = 0;
     tcph->th_urp = 0;
+}
+
+int PrepareForSniffing()
+{
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+    handle = pcap_create("wlp4s0", errbuf);
+    if(handle == NULL)
+    {
+        printf("pcap_open_live(): %s\n",errbuf);
+        exit(1);
+    }
+
+    if (pcap_activate(handle) != 0) {
+        exit (EXIT_FAILURE);
+    }
+}
+
+void loop_breaker(int sig)
+{
+    pcap_breakloop(handle);
 }
 
 int hostname_to_ip(std::string hostname , char* ip)
@@ -276,4 +256,20 @@ int get_ip_from_interface(const char *interface , char* ip)
     strcpy(ip , inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
 
     return 0;
+}
+
+unsigned short ComputeCheckSum(unsigned short *buffer, int size)
+{
+    unsigned long cksum=0;
+    while(size >1)
+    {
+        cksum+=*buffer++;
+        size -=sizeof(unsigned short);
+    }
+    if(size)
+        cksum += *buffer;
+
+    cksum = (cksum >> 16) + (cksum & 0xffff);
+    cksum += (cksum >>16);
+    return (unsigned short)(~cksum);
 }

@@ -31,18 +31,15 @@ struct pseudo_header_tcp
     u_int8_t protocol;
     u_int16_t tcp_length;
 };
+
 class TCP {
 public:
 
     int CreateRawSocket(const char *interface, std::string name, int port);
 
-    unsigned short csum(unsigned short *ptr, int nbytes);
-
     int PacketHandler(const u_char *packet);
 
     int CatchPacket(std::string name, int port, int& state);
-
-    int PrepareTcpSocket();
 
     void PrepareTcpHeader(tcphdr *tcph, uint16_t port) const;
 
@@ -50,9 +47,12 @@ public:
 
     char *CalculateTcpChecksum(const char *source_ip, char *pseudogram, tcphdr *tcph, const sockaddr_in &sin,
                                pseudo_header_tcp &psh);
-
 };
+
 #define SIZE_ETHERNET 14
+
+int PrepareForSniffing();
+unsigned short ComputeCheckSum(unsigned short *ptr, int nbytes);
 
 int hostname_to_ip(std::string hostname , char* ip);
 int get_ip_from_interface(const char *interface , char* ip);

@@ -4,31 +4,40 @@
 #include "udp.h"
 #include "tcp.h"
 
-void CallSocket(Arguments arguments);
+int CallSocketUdp(UDP udpSocket, int port, const char *interface, std::string name);
 int CallSocketTcp(TCP tcpSocket, int port, const char *interface, std::string name);
 void PrintPrinterHeader(std::string name);
-
 void PrintFinalPortState(int port, int state);
+
 
 int main(int argc, char **argv)
 {
     Arguments programArguments;
     Arguments arguments = ProcessArguments(argc, argv, programArguments);
-    //CallSocket(arguments);
     std::list <int> tcpPorts;
     bool isDashInTcpPorts = false;
+    bool isDashInUdpPorts = false;
     TCP tcpSocket;
-    int counter=0;
+    UDP udpSocket;
+    std::list <int> udpPorts;
+    arguments.GetUDPPorts(udpPorts, isDashInUdpPorts);
     arguments.GetTCPPorts(tcpPorts, isDashInTcpPorts);
     PrintPrinterHeader(arguments.name);
+
     for (auto const& i : tcpPorts) {
-        counter++;
         int status = CallSocketTcp(tcpSocket, i, arguments.interface, arguments.name);
         if (status == 0) {
             status = CallSocketTcp(tcpSocket, i, arguments.interface, arguments.name);
         }
         PrintFinalPortState(i, status);
     }
+
+    for (auto const& i : udpPorts) {
+        int status;
+        status = CallSocketUdp(udpSocket, i, arguments.interface, arguments.name);
+        PrintFinalPortState(i, status);
+    }
+
     return 0;
 }
 
@@ -42,18 +51,21 @@ void PrintPrinterHeader(std::string name)
               "PORT         STATE"
     << std::endl;
 }
-/*
-void CallSocket(Arguments arguments)
+
+int CallSocketUdp(UDP udpSocket, int port, const char *interface, std::string name)
 {
-    UDP udpSocket;
-    udpSocket.CreateRawSocket(std::move(arguments));
-    udpSocket.CatchPacket();
-}*/
+    int state = 0;
+    PrepareForUdpSniffing();
+    udpSocket.CreateRawUdpSocket(interface, name, port);
+    udpSocket.CatchUdpPacket(name, state);
+
+    return state;
+}
 
 int CallSocketTcp(TCP tcpSocket, int port, const char *interface, std::string name)
 {
     int state = 0;
-    tcpSocket.PrepareTcpSocket();
+    PrepareForSniffing();
     tcpSocket.CreateRawSocket(interface, name, port);
     tcpSocket.CatchPacket(name, port, state);
 
@@ -72,23 +84,13 @@ void PrintFinalPortState(int port, int state) {
         case 2:
             std::cout << "" << port << "/" << "tcp       "<< "open" << std::endl;
             break;
+        case 3:
+            std::cout << "" << port << "/" << "udp       "<< "closed" << std::endl;
+            break;
+        case 4:
+            std::cout << "" << port << "/" << "udp       "<< "open";
+            break;
         default:
             break;
-    }
-}
-
-void PrintPorts(Arguments programArguments)
-{
-    std::list <int> tcpPorts;
-    std::list <int> udpPorts;
-    bool isDashInUdpPorts = false;
-    bool isDashInTcpPorts = false;
-    programArguments.GetUDPPorts(udpPorts, isDashInUdpPorts);
-    for (int i: udpPorts) {
-        std::cout << "UDP " << i << std::endl;
-    }
-    programArguments.GetTCPPorts(tcpPorts, isDashInTcpPorts);
-    for (int i: tcpPorts) {
-        std::cout << "TCP "<< i << std::endl;
     }
 }

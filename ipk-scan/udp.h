@@ -12,42 +12,34 @@
 #include <netinet/in.h>
 #include <pcap.h>
 #include <arpa/inet.h>
-    class UDP {
-        public:
 
-            int CreateRawSocket(Arguments programArguments);
+struct pseudo_header
+{
+    u_int32_t source_address;
+    u_int32_t dest_address;
+    u_int8_t placeholder;
+    u_int8_t protocol;
+    u_int16_t udp_length;
+};
 
-            void PrepareUdpSocket(Arguments programArguments);
+class UDP {
+public:
 
-            unsigned short csum(unsigned short *ptr, int nbytes);
+    int CreateRawUdpSocket(const char *interface, std::string name, int port);
 
-            int CatchPacket();
-    };
-    struct udpheader {
-        unsigned short int udph_srcport;
-        unsigned short int udph_destport;
-        unsigned short int udph_len;
-        unsigned short int udph_chksum;
-    };
-    struct ipheader {
-        unsigned char      iph_ihl:5, iph_ver:4;
-        unsigned char      iph_tos;
-        unsigned short int iph_len;
-        unsigned short int iph_ident;
-        unsigned char      iph_flag;
-        unsigned short int iph_offset;
-        unsigned char      iph_ttl;
-        unsigned char      iph_protocol;
-        unsigned short int iph_chksum;
-        unsigned int       iph_sourceip;
-        unsigned int       iph_destip;
-    };
-    struct pseudo_header
-    {
-        u_int32_t source_address;
-        u_int32_t dest_address;
-        u_int8_t placeholder;
-        u_int8_t protocol;
-        u_int16_t udp_length;
-    };
+    int CatchUdpPacket(std::string name, int &state);
+
+    void PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin) const;
+
+    void PrepareUdpHeader(uint16_t port, udphdr *udph) const;
+
+    char *
+    CalculateUdpChecksum(const char *source_ip, char *pseudogram, udphdr *udph, const sockaddr_in &sin, pseudo_header &psh);
+
+    int PacketUdpHandler(const u_char *packet);
+};
+
+int PrepareForUdpSniffing();
+
+void loop_breaker_udp(int sig);
 #endif //PROJ2_UDP_H

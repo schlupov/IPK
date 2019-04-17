@@ -10,6 +10,7 @@
 #include <sstream>
 #include <cstring>
 #include <csignal>
+
 class Arguments
 {
     public:
