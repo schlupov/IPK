@@ -2,27 +2,12 @@
 *	Raw UDP sockets
 */
 
-#include <netdb.h>
-#include "argument_parser.h"
-#include <cstdio>
-#include <ctime>
-#include <netinet/in.h>
-#include <netinet/if_ether.h>
-#include <pcap.h>
-#include <error.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
 #include "udp.h"
 #include "tcp.h"
 
 pcap_t* handler;
 
-int UDP::PacketUdpHandler(const u_char *packet)
+int UDP::PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip)
 {
     int size_ip;
     struct sniff_ip *ip;
@@ -37,7 +22,12 @@ int UDP::PacketUdpHandler(const u_char *packet)
 
     icmp = (struct icmphdr *)(packet + SIZE_ETHERNET + size_ip);
 
-    if (strcmp(inet_ntoa(ip->ip_dst), "46.28.109.159")==0)
+    if (strcmp(inet_ntoa(ip->ip_dst), receiver_ip)==0 && strcmp(source_ip, receiver_ip)!=0)
+    {
+        return 5;
+    }
+
+    if (ip->ip_p != IPPROTO_ICMP)
     {
         return 5;
     }
@@ -49,7 +39,7 @@ int UDP::PacketUdpHandler(const u_char *packet)
     return 4;
 }
 
-int UDP::CatchUdpPacket(std::string name, int &state)
+int UDP::CatchUdpPacket(const char *interface, std::string name, int &state)
 {
     const u_char *packet;
     bpf_u_int32 netp;
@@ -63,6 +53,11 @@ int UDP::CatchUdpPacket(std::string name, int &state)
     struct pcap_pkthdr hdr{};
     struct bpf_program fp{};
 
+    char receiver_ip[200];
+    HostnameToIp(name, receiver_ip);
+
+    char source_ip[100];
+    GetIpFromInterface(interface, source_ip);
 
     if(pcap_compile(handler,&fp,filter,0,netp) == -1)
     { fprintf(stderr,"Error calling pcap_compile\n"); exit(1); }
@@ -72,15 +67,15 @@ int UDP::CatchUdpPacket(std::string name, int &state)
 
     while(true) {
 
-        alarm(3);
-        signal(SIGALRM, loop_breaker_udp);
+        alarm(2);
+        signal(SIGALRM, LoopBreakerUdp);
         packet = pcap_next(handler, &hdr);
 
         if (packet == nullptr) {
             break;
         }
 
-        int code = PacketUdpHandler(packet);
+        int code = PacketUdpHandler(packet, source_ip, receiver_ip);
 
         if (code == 3)
         {
@@ -90,7 +85,6 @@ int UDP::CatchUdpPacket(std::string name, int &state)
         if (code == 4)
         {
             state = 4;
-            break;
         }
     }
 
@@ -103,13 +97,12 @@ int UDP::CatchUdpPacket(std::string name, int &state)
 int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
 {
     char receiver_ip[100];
-    hostname_to_ip(name, receiver_ip);
+    HostnameToIp(name, receiver_ip);
 
     char source_ip[100];
-    get_ip_from_interface(interface, source_ip);
+    GetIpFromInterface(interface, source_ip);
 
     char datagram[4096];
-    char *pseudogram;
     int one = 1;
     const int *val = &one;
     memset (datagram, 0, 4096);
@@ -117,13 +110,12 @@ int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
     auto *iph = (struct iphdr *) datagram;
     auto *udph = (struct udphdr *)(datagram + sizeof (struct iphdr));
     struct sockaddr_in sin{};
-    struct pseudo_header psh{};
 
     int s = socket(PF_INET, SOCK_RAW, IPPROTO_UDP);
     if(s == -1)
     {
         perror("Failed to create raw socket");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     sin.sin_family = AF_INET;
@@ -132,12 +124,11 @@ int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
 
     PrepareIpHeader(source_ip, datagram, iph, sin);
     PrepareUdpHeader(static_cast<uint16_t>(port), udph);
-    pseudogram = CalculateUdpChecksum(source_ip, pseudogram, udph, sin, psh);
 
     if (setsockopt (s, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
     {
         perror("Error setting IP_HDRINCL");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     int c=1;
@@ -150,7 +141,6 @@ int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
         c--;
     }
 
-    free(pseudogram);
     close(s);
     return 0;
 }
@@ -159,24 +149,6 @@ void UDP::PrepareUdpHeader(uint16_t port, udphdr *udph) const {
     udph->source = htons (1234);
     udph->dest = htons (port);
     udph->len = htons(sizeof(struct udphdr));
-}
-
-char *UDP::CalculateUdpChecksum(const char *source_ip, char *pseudogram, udphdr *udph, const sockaddr_in &sin,
-                                 pseudo_header &psh) {
-    psh.source_address = inet_addr(source_ip );
-    psh.dest_address = sin.sin_addr.s_addr;
-    psh.placeholder = 0;
-    psh.protocol = IPPROTO_UDP;
-    psh.udp_length = htons(sizeof(struct udphdr));
-
-    int psize = sizeof(struct pseudo_header) + sizeof(struct udphdr);
-    pseudogram = (char *)malloc(psize);
-
-    memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-    memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr));
-
-    udph->check = ComputeCheckSum( (unsigned short*) pseudogram , psize);
-    return pseudogram;
 }
 
 void UDP::PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin) const {
@@ -194,12 +166,12 @@ void UDP::PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *ip
     iph->check = ComputeCheckSum((unsigned short *) datagram, (sizeof(struct iphdr) + sizeof(struct udphdr)));
 }
 
-int PrepareForUdpSniffing()
+int PrepareForUdpSniffing(const char *interface)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
 
-    handler = pcap_create("wlp4s0", errbuf);
-    if(handler == NULL)
+    handler = pcap_create(interface, errbuf);
+    if(handler == nullptr)
     {
         printf("pcap_open_live(): %s\n",errbuf);
         exit(1);
@@ -210,7 +182,7 @@ int PrepareForUdpSniffing()
     }
 }
 
-void loop_breaker_udp(int sig)
+void LoopBreakerUdp(int sig)
 {
     pcap_breakloop(handler);
 }

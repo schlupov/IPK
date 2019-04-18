@@ -1,12 +1,5 @@
 #include "argument_parser.h"
 
-void Arguments::PrintArguments()
-{
-    std::cout << "UDP ports are: " << udpPort << std::endl;
-    std::cout << "TCP ports are: " << tcpPort << std::endl;
-    std::cout << "Domain name or IP adress is: " << name << std::endl;
-}
-
 void Arguments::GetTCPPorts(std::list <int> &tcpPorts, bool &dash)
 {
     char delimiter;
@@ -54,6 +47,7 @@ void Arguments::GetPort(std::list<int> &ports, char delimiter, std::stringstream
     }
 }
 
+
 void PrintHelp()
 {
     std::cout <<
@@ -65,14 +59,10 @@ void PrintHelp()
     exit(1);
 }
 
-void signalHandler(int signum) {
-    PrintHelp();
-    exit(1);
-}
-
-
 Arguments ProcessArguments(int argc, char** argv, Arguments programArguments)
 {
+    bool inter = false;
+
     const char* const short_opts = "pu:pt:i:h";
     const  option long_options[] = {
             {"pu", required_argument, nullptr, 'u'},
@@ -102,7 +92,8 @@ Arguments ProcessArguments(int argc, char** argv, Arguments programArguments)
                 programArguments.tcpPort = optarg;
                 break;
             case 'i':
-                programArguments.interface = optarg;
+                strcpy(programArguments.interface, optarg);
+                inter = true;
                 break;
             case '?':
             case 'h':
@@ -112,8 +103,34 @@ Arguments ProcessArguments(int argc, char** argv, Arguments programArguments)
         }
     }
 
+    if (!inter)
+    {
+        GetInterface(programArguments);
+
+    }
+
     std::string adress = argv[argc-1];
     programArguments.name = adress;
 
     return programArguments;
+}
+
+void GetInterface(Arguments &programArguments)
+{
+
+    struct ifaddrs* ifap, *ifa;
+
+    getifaddrs (&ifap);
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr->sa_family==AF_INET)
+        {
+            if (!(ifa->ifa_flags & (IFF_LOOPBACK)))
+            {
+                strcpy(programArguments.interface, ifa->ifa_name);
+                break;
+            }
+        }
+    }
+    freeifaddrs(ifap);
+    ifap = NULL;
 }

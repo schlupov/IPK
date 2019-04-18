@@ -28,6 +28,11 @@ int TCP::PacketHandler(const u_char *packet)
         return 42;
     }
 
+    if (ip->ip_p != IPPROTO_TCP)
+    {
+        return 0;
+    }
+
     if (tcp->th_flags & TH_RST) {
         return 1;
     }
@@ -60,10 +65,9 @@ int TCP::CatchPacket(std::string name, int port, int& state)
     if(pcap_setfilter(handle,&fp) == -1)
     { fprintf(stderr,"Error setting filter\n"); exit(1); }
 
-    int c=1;
-    while(c>0) {
-        alarm(2);
-        signal(SIGALRM, loop_breaker);
+    while(true) {
+        alarm(1);
+        signal(SIGALRM, LoopBreaker);
         packet = pcap_next(handle, &hdr);
 
         if (packet == nullptr) {
@@ -79,12 +83,13 @@ int TCP::CatchPacket(std::string name, int port, int& state)
         if (code == 1)
         {
             state = 1;
+            break;
         }
         if (code == 2)
         {
             state = 2;
+            break;
         }
-        c--;
     }
 
     pcap_freecode(&fp);
@@ -96,10 +101,10 @@ int TCP::CatchPacket(std::string name, int port, int& state)
 int TCP::CreateRawSocket(const char *interface, std::string name, int port)
 {
     char receiver_ip[100];
-    hostname_to_ip(name, receiver_ip);
+    HostnameToIp(name, receiver_ip);
 
     char source_ip[100];
-    get_ip_from_interface(interface, source_ip);
+    GetIpFromInterface(interface, source_ip);
 
     char datagram[4096];
     char *pseudogram;
@@ -197,11 +202,11 @@ void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
     tcph->th_urp = 0;
 }
 
-int PrepareForSniffing()
+int PrepareForSniffing(const char *interface)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
 
-    handle = pcap_create("wlp4s0", errbuf);
+    handle = pcap_create(interface, errbuf);
     if(handle == NULL)
     {
         printf("pcap_open_live(): %s\n",errbuf);
@@ -213,12 +218,12 @@ int PrepareForSniffing()
     }
 }
 
-void loop_breaker(int sig)
+void LoopBreaker(int sig)
 {
     pcap_breakloop(handle);
 }
 
-int hostname_to_ip(std::string hostname , char* ip)
+int HostnameToIp(std::string hostname, char *ip)
 {
     unsigned long n = hostname.length();
     char char_array[n + 1];
@@ -242,7 +247,7 @@ int hostname_to_ip(std::string hostname , char* ip)
     return 1;
 }
 
-int get_ip_from_interface(const char *interface , char* ip)
+int GetIpFromInterface(const char *interface, char *ip)
 {
     int fd;
     struct ifreq ifr{};

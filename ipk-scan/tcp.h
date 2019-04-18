@@ -51,12 +51,15 @@ public:
 
 #define SIZE_ETHERNET 14
 
-int PrepareForSniffing();
+int PrepareForSniffing(const char *interface);
+
 unsigned short ComputeCheckSum(unsigned short *ptr, int nbytes);
 
-int hostname_to_ip(std::string hostname , char* ip);
-int get_ip_from_interface(const char *interface , char* ip);
-void loop_breaker(int sig);
+int HostnameToIp(std::string hostname, char *ip);
+
+int GetIpFromInterface(const char *interface, char *ip);
+
+void LoopBreaker(int sig);
 
 struct sniff_ip {
     u_char ip_vhl;      /* version << 4 | header length >> 2 */
@@ -74,10 +77,10 @@ struct sniff_ip {
     struct in_addr ip_src;
     struct in_addr ip_dst; /* source and dest address */
 };
+
 #define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
 
-/* TCP header */
 typedef u_int tcp_seq;
 
 struct sniff_tcp {

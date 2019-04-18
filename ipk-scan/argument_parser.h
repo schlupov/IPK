@@ -7,6 +7,8 @@
 #include <getopt.h>
 #include <iostream>
 #include <list>
+#include <ifaddrs.h>
+#include <net/if.h>
 #include <sstream>
 #include <cstring>
 #include <csignal>
@@ -17,9 +19,7 @@ class Arguments
         std::string udpPort;
         std::string tcpPort;
         std::string name;
-        const char *interface;
-
-        void PrintArguments();
+        char interface[100];
 
         void GetTCPPorts(std::list <int> &tcpPorts, bool &dash);
 
@@ -27,7 +27,10 @@ class Arguments
 
         void GetPort(std::list<int> &ports, char delimiter, std::stringstream &ss, std::string &token);
 };
+
 Arguments ProcessArguments(int argc, char** argv, Arguments programArguments);
+
 void PrintHelp();
-void signalHandler(int signum);
+
+void GetInterface(Arguments &programArguments);
 #endif //PROJ2_ARGUMENT_PARSER_H

@@ -4,8 +4,8 @@
 #include "udp.h"
 #include "tcp.h"
 
-int CallSocketUdp(UDP udpSocket, int port, const char *interface, std::string name);
-int CallSocketTcp(TCP tcpSocket, int port, const char *interface, std::string name);
+int SendUdpPacket(UDP udpSocket, int port, const char *interface, std::string name);
+int SendTcpPacket(TCP tcpSocket, int port, const char *interface, std::string name);
 void PrintPrinterHeader(std::string name);
 void PrintFinalPortState(int port, int state);
 
@@ -20,21 +20,23 @@ int main(int argc, char **argv)
     TCP tcpSocket;
     UDP udpSocket;
     std::list <int> udpPorts;
+
     arguments.GetUDPPorts(udpPorts, isDashInUdpPorts);
     arguments.GetTCPPorts(tcpPorts, isDashInTcpPorts);
+
     PrintPrinterHeader(arguments.name);
 
     for (auto const& i : tcpPorts) {
-        int status = CallSocketTcp(tcpSocket, i, arguments.interface, arguments.name);
+        int status = SendTcpPacket(tcpSocket, i, arguments.interface, arguments.name);
         if (status == 0) {
-            status = CallSocketTcp(tcpSocket, i, arguments.interface, arguments.name);
+            status = SendTcpPacket(tcpSocket, i, arguments.interface, arguments.name);
         }
         PrintFinalPortState(i, status);
     }
 
     for (auto const& i : udpPorts) {
         int status;
-        status = CallSocketUdp(udpSocket, i, arguments.interface, arguments.name);
+        status = SendUdpPacket(udpSocket, i, arguments.interface, arguments.name);
         PrintFinalPortState(i, status);
     }
 
@@ -44,7 +46,7 @@ int main(int argc, char **argv)
 void PrintPrinterHeader(std::string name)
 {
     char receiver_ip[100];
-    hostname_to_ip(name, receiver_ip);
+    HostnameToIp(name, receiver_ip);
 
     std::cout <<
               "Interesting ports on " << name << " (" << receiver_ip << "):\n"
@@ -52,20 +54,20 @@ void PrintPrinterHeader(std::string name)
     << std::endl;
 }
 
-int CallSocketUdp(UDP udpSocket, int port, const char *interface, std::string name)
+int SendUdpPacket(UDP udpSocket, int port, const char *interface, std::string name)
 {
-    int state = 0;
-    PrepareForUdpSniffing();
+    int state = 4;
+    PrepareForUdpSniffing(interface);
     udpSocket.CreateRawUdpSocket(interface, name, port);
-    udpSocket.CatchUdpPacket(name, state);
+    udpSocket.CatchUdpPacket(interface, name, state);
 
     return state;
 }
 
-int CallSocketTcp(TCP tcpSocket, int port, const char *interface, std::string name)
+int SendTcpPacket(TCP tcpSocket, int port, const char *interface, std::string name)
 {
     int state = 0;
-    PrepareForSniffing();
+    PrepareForSniffing(interface);
     tcpSocket.CreateRawSocket(interface, name, port);
     tcpSocket.CatchPacket(name, port, state);
 
@@ -88,7 +90,7 @@ void PrintFinalPortState(int port, int state) {
             std::cout << "" << port << "/" << "udp       "<< "closed" << std::endl;
             break;
         case 4:
-            std::cout << "" << port << "/" << "udp       "<< "open";
+            std::cout << "" << port << "/" << "udp       "<< "open" << std::endl;
             break;
         default:
             break;

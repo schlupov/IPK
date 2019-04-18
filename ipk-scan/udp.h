@@ -1,17 +1,24 @@
 #ifndef PROJ2_UDP_H
 #define PROJ2_UDP_H
 #include "argument_parser.h"
-#include<cstdio>    //for printf
-#include<cstring> //memset
-#include<sys/socket.h>	//for socket ofcourse
-#include<cstdlib> //for exit(0);
-#include<cerrno> //For errno - the error number
-#include<netinet/udp.h>	//Provides declarations for udp header
-#include<netinet/ip.h>	//Provides declarations for ip header
+#include<cstdio>
+#include<cstring>
+#include<sys/socket.h>
+#include<cstdlib>
+#include<cerrno>
+#include<netinet/udp.h>
+#include<netinet/ip.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <pcap.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/if_ether.h>
+#include <pcap.h>
+#include <error.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <netinet/ip_icmp.h>
 
 struct pseudo_header
 {
@@ -27,19 +34,16 @@ public:
 
     int CreateRawUdpSocket(const char *interface, std::string name, int port);
 
-    int CatchUdpPacket(std::string name, int &state);
+    int CatchUdpPacket(const char *interface, std::string name, int &state);
 
     void PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin) const;
 
     void PrepareUdpHeader(uint16_t port, udphdr *udph) const;
 
-    char *
-    CalculateUdpChecksum(const char *source_ip, char *pseudogram, udphdr *udph, const sockaddr_in &sin, pseudo_header &psh);
-
-    int PacketUdpHandler(const u_char *packet);
+    int PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip);
 };
 
-int PrepareForUdpSniffing();
+int PrepareForUdpSniffing(const char *interface);
 
-void loop_breaker_udp(int sig);
+void LoopBreakerUdp(int sig);
 #endif //PROJ2_UDP_H
