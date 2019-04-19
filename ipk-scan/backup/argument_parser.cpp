@@ -109,7 +109,9 @@ Arguments ProcessArguments(int argc, char** argv, Arguments programArguments)
 
     }
 
+    //char adress[100];
     strcpy(programArguments.name, argv[argc-1]);
+    //programArguments.name = adress;
 
     return programArguments;
 }
