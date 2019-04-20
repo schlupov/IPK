@@ -4,6 +4,7 @@
 
 #include "udp.h"
 #include "tcp.h"
+#include "argument_parser.h"
 
 pcap_t* handler;
 
@@ -11,7 +12,7 @@ int UDP::PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_
 {
     int size_ip;
     struct sniff_ip *ip;
-    const struct icmphdr *icmp;
+    struct icmphdr *icmp;
 
     ip = (struct sniff_ip *) (packet + SIZE_ETHERNET);
     size_ip = IP_HL(ip) * 4;
@@ -39,12 +40,12 @@ int UDP::PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_
     return 4;
 }
 
-int UDP::CatchUdpPacket(const char *interface, std::string name, int &state)
+int UDP::CatchUdpPacket(Arguments programArguments, int &state)
 {
     const u_char *packet;
     bpf_u_int32 netp;
     std::ostringstream oss;
-    oss << "host " << name;
+    oss << "host " << programArguments.name;
     std::string var = oss.str();
     unsigned long n = var.length();
     char char_array[n + 1];
@@ -52,12 +53,6 @@ int UDP::CatchUdpPacket(const char *interface, std::string name, int &state)
     char *filter = char_array;
     struct pcap_pkthdr hdr{};
     struct bpf_program fp{};
-
-    char receiver_ip[200];
-    HostnameToIp(name, receiver_ip);
-
-    char source_ip[100];
-    GetIpFromInterface(interface, source_ip);
 
     if(pcap_compile(handler,&fp,filter,0,netp) == -1)
     { fprintf(stderr,"Error calling pcap_compile\n"); exit(1); }
@@ -75,7 +70,7 @@ int UDP::CatchUdpPacket(const char *interface, std::string name, int &state)
             break;
         }
 
-        int code = PacketUdpHandler(packet, source_ip, receiver_ip);
+        int code = PacketUdpHandler(packet, programArguments.interfaceIp, programArguments.ipAddress);
 
         if (code == 3)
         {
@@ -94,14 +89,8 @@ int UDP::CatchUdpPacket(const char *interface, std::string name, int &state)
     return 42;
 }
 
-int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
+int UDP::CreateRawUdpSocket(Arguments programArguments, int port)
 {
-    char receiver_ip[100];
-    HostnameToIp(name, receiver_ip);
-
-    char source_ip[100];
-    GetIpFromInterface(interface, source_ip);
-
     char datagram[4096];
     int one = 1;
     const int *val = &one;
@@ -120,9 +109,9 @@ int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(1234);
-    sin.sin_addr.s_addr = inet_addr (receiver_ip);
+    sin.sin_addr.s_addr = inet_addr (programArguments.ipAddress);
 
-    PrepareIpHeader(source_ip, datagram, iph, sin);
+    PrepareIpHeader(programArguments.interfaceIp, datagram, iph, sin);
     PrepareUdpHeader(static_cast<uint16_t>(port), udph);
 
     if (setsockopt (s, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
@@ -145,13 +134,15 @@ int UDP::CreateRawUdpSocket(const char *interface, std::string name, int port)
     return 0;
 }
 
-void UDP::PrepareUdpHeader(uint16_t port, udphdr *udph) const {
+void UDP::PrepareUdpHeader(uint16_t port, udphdr *udph)
+{
     udph->source = htons (1234);
     udph->dest = htons (port);
     udph->len = htons(sizeof(struct udphdr));
 }
 
-void UDP::PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin) const {
+void UDP::PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin)
+{
     iph->ihl = 5;
     iph->version = 4;
     iph->tos = 0;
@@ -166,7 +157,7 @@ void UDP::PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *ip
     iph->check = ComputeCheckSum((unsigned short *) datagram, (sizeof(struct iphdr) + sizeof(struct udphdr)));
 }
 
-int PrepareForUdpSniffing(const char *interface)
+int PrepareForUdpSniffing(char *interface)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
 

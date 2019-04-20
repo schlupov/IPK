@@ -3,6 +3,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/ipk-scan.dir/argument_parser.cpp.o"
   "CMakeFiles/ipk-scan.dir/udp.cpp.o"
   "CMakeFiles/ipk-scan.dir/tcp.cpp.o"
+  "CMakeFiles/ipk-scan.dir/ipv6.cpp.o"
   "ipk-scan.pdb"
   "ipk-scan"
 )

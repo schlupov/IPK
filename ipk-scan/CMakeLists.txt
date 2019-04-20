@@ -8,6 +8,6 @@ set(CMAKE_MODULE_PATH "/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan")
 include(FindPCAP)
 find_package(PCAP REQUIRED)
 
-add_executable(ipk-scan ipk-scan.cpp argument_parser.cpp argument_parser.h udp.cpp udp.h tcp.cpp tcp.h)
+add_executable(ipk-scan ipk-scan.cpp argument_parser.cpp argument_parser.h udp.cpp udp.h tcp.cpp tcp.h ipv6.cpp ipv6.h)
 
 target_link_libraries(ipk-scan ${PCAP_LIBRARY})

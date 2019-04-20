@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include "argument_parser.h"
 
 struct pseudo_header_tcp
 {
@@ -35,7 +36,7 @@ struct pseudo_header_tcp
 class TCP {
 public:
 
-    int CreateRawSocket(const char *interface, std::string name, int port);
+    int CreateRawSocket(Arguments programArguments, int port);
 
     int PacketHandler(const u_char *packet);
 
@@ -43,21 +44,17 @@ public:
 
     void PrepareTcpHeader(tcphdr *tcph, uint16_t port) const;
 
-    void PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin);
+    void PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph,  sockaddr_in &sin);
 
-    char *CalculateTcpChecksum(const char *source_ip, char *pseudogram, tcphdr *tcph, const sockaddr_in &sin,
+    char *CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
                                pseudo_header_tcp &psh);
 };
 
 #define SIZE_ETHERNET 14
 
-int PrepareForSniffing(const char *interface);
+int PrepareForSniffing(char *interface);
 
 unsigned short ComputeCheckSum(unsigned short *ptr, int nbytes);
-
-int HostnameToIp(std::string hostname, char *ip);
-
-int GetIpFromInterface(const char *interface, char *ip);
 
 void LoopBreaker(int sig);
 

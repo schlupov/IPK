@@ -3,12 +3,16 @@
 #include "argument_parser.h"
 #include "udp.h"
 #include "tcp.h"
+#include "ipv6.h"
 
-int SendUdpPacket(UDP udpSocket, int port, const char *interface, std::string name);
-int SendTcpPacket(TCP tcpSocket, int port, const char *interface, std::string name);
-void PrintPrinterHeader(std::string name);
+int SendUdpPacket(UDP udpSocket, int port, Arguments &arguments);
+int SendTcpPacket(TCP tcpSocket, int port, Arguments &arguments);
+void PrintPrinterHeader(Arguments arguments);
 void PrintFinalPortState(int port, int state);
-
+void ProcessTcpPackets(Arguments &arguments, TCP &tcpSocket, int i);
+void ProcessUdpPackets(Arguments &arguments, UDP &udpSocket, int &i);
+int SendIpv6Packet(IPV6 ipv6Socket, int port, Arguments &arguments, std::string typeOfPacket);
+void ProcessIpv6Packets(Arguments &arguments, IPV6 &ipv6Socket, int i, std::string typeOfPacket);
 
 int main(int argc, char **argv)
 {
@@ -19,58 +23,143 @@ int main(int argc, char **argv)
     bool isDashInTcpPorts = false;
     bool isDashInUdpPorts = false;
     TCP tcpSocket;
+    IPV6 ipv6Socket;
     UDP udpSocket;
     std::list <int> udpPorts;
 
     arguments.GetUDPPorts(udpPorts, isDashInUdpPorts);
     arguments.GetTCPPorts(tcpPorts, isDashInTcpPorts);
 
-    PrintPrinterHeader(arguments.name);
+    PrintPrinterHeader(arguments);
 
-    for (auto const& i : tcpPorts) {
-        int status = SendTcpPacket(tcpSocket, i, arguments.interface, arguments.name);
-        if (status == 0) {
-            status = SendTcpPacket(tcpSocket, i, arguments.interface, arguments.name);
+    if (strstr(arguments.ipAddress, ".") != NULL)
+    {
+
+        if (isDashInTcpPorts)
+        {
+            int begin = tcpPorts.front();
+            int end = tcpPorts.back();
+            for (int i=begin;i<end+1;i++)
+            {
+                ProcessTcpPackets(arguments, tcpSocket, i);
+            }
         }
-        PrintFinalPortState(i, status);
+        else
+        {
+            for (int& i : tcpPorts) {
+                ProcessTcpPackets(arguments, tcpSocket, i);
+            }
+        }
+
+        if(isDashInUdpPorts)
+        {
+            int begin = udpPorts.front();
+            int end = udpPorts.back();
+            for (int i=begin;i<end+1;i++)
+            {
+                ProcessUdpPackets(arguments, udpSocket, i);
+            }
+        }
+        else
+        {
+            for (int& i : udpPorts) {
+                ProcessUdpPackets(arguments, udpSocket, i);
+            }
+        }
+    }
+    else
+    {
+        if (isDashInTcpPorts)
+        {
+            int begin = tcpPorts.front();
+            int end = tcpPorts.back();
+            for (int i=begin;i<end+1;i++)
+            {
+                ProcessIpv6Packets(arguments, ipv6Socket, i, "tcp");
+            }
+        }
+        else
+        {
+            for (int& i : tcpPorts) {
+                ProcessIpv6Packets(arguments, ipv6Socket, i, "tcp");
+            }
+        }
+
+        if(isDashInUdpPorts)
+        {
+            int begin = udpPorts.front();
+            int end = udpPorts.back();
+            for (int i=begin;i<end+1;i++)
+            {
+                ProcessIpv6Packets(arguments, ipv6Socket, i, "udp");
+            }
+        }
+        else
+        {
+            for (int& i : udpPorts) {
+                ProcessIpv6Packets(arguments, ipv6Socket, i, "udp");
+            }
+        }
     }
 
-    for (auto const& i : udpPorts) {
-        int status;
-        status = SendUdpPacket(udpSocket, i, arguments.interface, arguments.name);
-        PrintFinalPortState(i, status);
-    }
 
     return 0;
 }
 
-void PrintPrinterHeader(std::string name)
+void ProcessUdpPackets(Arguments &arguments, UDP &udpSocket, int &i)
 {
-    char receiver_ip[100];
-    HostnameToIp(name, receiver_ip);
+    int status;
+    status = SendUdpPacket(udpSocket, i, arguments);
+    PrintFinalPortState(i, status);
+}
 
+void ProcessTcpPackets(Arguments &arguments, TCP &tcpSocket, int i)
+{
+    int status = SendTcpPacket(tcpSocket, i, arguments);
+    if (status == 0) {
+        status = SendTcpPacket(tcpSocket, i, arguments);
+    }
+    PrintFinalPortState(i, status);
+}
+
+void ProcessIpv6Packets(Arguments &arguments, IPV6 &ipv6Socket, int i, std::string typeOfPacket)
+{
+    SendIpv6Packet(ipv6Socket, i, arguments, typeOfPacket);
+}
+
+
+void PrintPrinterHeader(Arguments arguments)
+{
     std::cout <<
-              "Interesting ports on " << name << " (" << receiver_ip << "):\n"
+              "Interesting ports on " << arguments.name << " (" << arguments.ipAddress << "):\n"
               "PORT         STATE"
     << std::endl;
 }
 
-int SendUdpPacket(UDP udpSocket, int port, const char *interface, std::string name)
+int SendUdpPacket(UDP udpSocket, int port, Arguments &arguments)
 {
     int state = 4;
-    PrepareForUdpSniffing(interface);
-    udpSocket.CreateRawUdpSocket(interface, name, port);
-    udpSocket.CatchUdpPacket(interface, name, state);
+    PrepareForUdpSniffing(arguments.interface);
+    udpSocket.CreateRawUdpSocket(arguments, port);
+    udpSocket.CatchUdpPacket(arguments, state);
 
     return state;
 }
 
-int SendTcpPacket(TCP tcpSocket, int port, const char *interface, std::string name)
+int SendTcpPacket(TCP tcpSocket, int port, Arguments &arguments)
 {
     int state = 0;
-    PrepareForSniffing(interface);
-    tcpSocket.CreateRawSocket(interface, name, port);
-    tcpSocket.CatchPacket(name, port, state);
+    PrepareForSniffing(arguments.interface);
+    tcpSocket.CreateRawSocket(arguments, port);
+    tcpSocket.CatchPacket(arguments.name, port, state);
+
+    return state;
+}
+
+int SendIpv6Packet(IPV6 ipv6Socket, int port, Arguments &arguments, std::string typeOfPacket)
+{
+    int state = 0;
+    ipv6Socket.CreateRawSocket(arguments, port, typeOfPacket);
 
     return state;
 }

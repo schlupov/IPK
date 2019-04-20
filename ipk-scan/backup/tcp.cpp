@@ -33,11 +33,13 @@ int TCP::PacketHandler(const u_char *packet)
         return 0;
     }
 
-    if (tcp->th_flags & TH_RST) {
+    if (tcp->th_flags & TH_RST)
+    {
         return 1;
     }
 
-    if (tcp->th_flags & TH_ACK) {
+    if (tcp->th_flags & TH_ACK)
+    {
         return 2;
     }
 
@@ -98,14 +100,8 @@ int TCP::CatchPacket(std::string name, int port, int& state)
     return 42;
 }
 
-int TCP::CreateRawSocket(const char *interface, std::string name, int port)
+int TCP::CreateRawSocket(Arguments programArguments, int port)
 {
-    char receiver_ip[100];
-    HostnameToIp(name, receiver_ip);
-
-    char source_ip[100];
-    GetIpFromInterface(interface, source_ip);
-
     char datagram[4096];
     char *pseudogram;
     int one = 1;
@@ -126,11 +122,11 @@ int TCP::CreateRawSocket(const char *interface, std::string name, int port)
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(1234);
-    sin.sin_addr.s_addr = inet_addr (receiver_ip);
+    sin.sin_addr.s_addr = inet_addr (programArguments.ipAddress);
 
-    PrepareIpHeader(source_ip, datagram, iph, sin);
+    PrepareIpHeader(programArguments.interfaceIp, datagram, iph, sin);
     PrepareTcpHeader(tcph, static_cast<uint16_t>(port));
-    pseudogram = CalculateTcpChecksum(source_ip, pseudogram, tcph, sin, psh);
+    pseudogram = CalculateTcpChecksum(programArguments.interfaceIp, pseudogram, tcph, sin, psh);
 
     if (setsockopt (s, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
     {
@@ -151,7 +147,7 @@ int TCP::CreateRawSocket(const char *interface, std::string name, int port)
     return 0;
 }
 
-char *TCP::CalculateTcpChecksum(const char *source_ip, char *pseudogram, tcphdr *tcph, const sockaddr_in &sin,
+char *TCP::CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
                                 pseudo_header_tcp &psh) {
     psh.source_address = inet_addr(source_ip );
     psh.dest_address = sin.sin_addr.s_addr;
@@ -169,7 +165,7 @@ char *TCP::CalculateTcpChecksum(const char *source_ip, char *pseudogram, tcphdr 
     return pseudogram;
 }
 
-void TCP::PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin) {
+void TCP::PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin) {
     iph->ihl = 5;
     iph->version = 4;
     iph->tos = 16;
@@ -202,7 +198,7 @@ void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
     tcph->th_urp = 0;
 }
 
-int PrepareForSniffing(const char *interface)
+int PrepareForSniffing(char *interface)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -221,46 +217,6 @@ int PrepareForSniffing(const char *interface)
 void LoopBreaker(int sig)
 {
     pcap_breakloop(handle);
-}
-
-int HostnameToIp(std::string hostname, char *ip)
-{
-    unsigned long n = hostname.length();
-    char char_array[n + 1];
-    strcpy(char_array, hostname.c_str());
-    struct hostent *he;
-    struct in_addr **addr_list;
-    int i;
-
-    if ( (he = gethostbyname( char_array ) ) == nullptr)
-    {
-        herror("gethostbyname");
-        exit(EXIT_FAILURE);
-    }
-
-    addr_list = (struct in_addr **) he->h_addr_list;
-    for(i = 0; addr_list[i] != nullptr; i++)
-    {
-        strcpy(ip , inet_ntoa(*addr_list[i]) );
-        return 0;
-    }
-    return 1;
-}
-
-int GetIpFromInterface(const char *interface, char *ip)
-{
-    int fd;
-    struct ifreq ifr{};
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    ifr.ifr_addr.sa_family = AF_INET;
-
-    strncpy(ifr.ifr_name, interface, IFNAMSIZ-1);
-    ioctl(fd, SIOCGIFADDR, &ifr);
-    close(fd);
-    strcpy(ip , inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
-
-    return 0;
 }
 
 unsigned short ComputeCheckSum(unsigned short *buffer, int size)

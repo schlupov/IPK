@@ -177,6 +177,33 @@ ipk-scan.cpp.s:
 	$(MAKE) -f CMakeFiles/ipk-scan.dir/build.make CMakeFiles/ipk-scan.dir/ipk-scan.cpp.s
 .PHONY : ipk-scan.cpp.s
 
+ipv6.o: ipv6.cpp.o
+
+.PHONY : ipv6.o
+
+# target to build an object file
+ipv6.cpp.o:
+	$(MAKE) -f CMakeFiles/ipk-scan.dir/build.make CMakeFiles/ipk-scan.dir/ipv6.cpp.o
+.PHONY : ipv6.cpp.o
+
+ipv6.i: ipv6.cpp.i
+
+.PHONY : ipv6.i
+
+# target to preprocess a source file
+ipv6.cpp.i:
+	$(MAKE) -f CMakeFiles/ipk-scan.dir/build.make CMakeFiles/ipk-scan.dir/ipv6.cpp.i
+.PHONY : ipv6.cpp.i
+
+ipv6.s: ipv6.cpp.s
+
+.PHONY : ipv6.s
+
+# target to generate assembly for a file
+ipv6.cpp.s:
+	$(MAKE) -f CMakeFiles/ipk-scan.dir/build.make CMakeFiles/ipk-scan.dir/ipv6.cpp.s
+.PHONY : ipv6.cpp.s
+
 tcp.o: tcp.cpp.o
 
 .PHONY : tcp.o
@@ -246,6 +273,9 @@ help:
 	@echo "... ipk-scan.o"
 	@echo "... ipk-scan.i"
 	@echo "... ipk-scan.s"
+	@echo "... ipv6.o"
+	@echo "... ipv6.i"
+	@echo "... ipv6.s"
 	@echo "... tcp.o"
 	@echo "... tcp.i"
 	@echo "... tcp.s"

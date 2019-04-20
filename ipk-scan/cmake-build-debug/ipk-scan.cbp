@@ -89,6 +89,12 @@
 		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipk-scan.cpp">
 			<Option target="ipk-scan"/>
 		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.cpp">
+			<Option target="ipk-scan"/>
+		</Unit>
+		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h">
+			<Option target="ipk-scan"/>
+		</Unit>
 		<Unit filename="/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.cpp">
 			<Option target="ipk-scan"/>
 		</Unit>

@@ -7,8 +7,14 @@
 #IncludeRegexTransform: 
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.cpp
+netdb.h
+-
+vector
+-
 argument_parser.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
+tcp.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
 unistd.h
@@ -27,6 +33,8 @@ list
 -
 ifaddrs.h
 -
+arpa/inet.h
+-
 net/if.h
 -
 sstream
@@ -34,6 +42,8 @@ sstream
 cstring
 -
 csignal
+-
+pcap.h
 -
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipk-scan.cpp
@@ -45,6 +55,56 @@ argument_parser.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
 udp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.h
+tcp.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
+ipv6.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
+
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.cpp
+ipv6.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
+
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
+string
+-
+stdio.h
+-
+stdlib.h
+-
+unistd.h
+-
+string.h
+-
+netdb.h
+-
+sys/types.h
+-
+sys/socket.h
+-
+netinet/in.h
+-
+netinet/ip.h
+-
+netinet/ip6.h
+-
+netinet/tcp.h
+-
+arpa/inet.h
+-
+sys/ioctl.h
+-
+bits/ioctls.h
+-
+net/if.h
+-
+linux/if_ether.h
+-
+linux/if_packet.h
+-
+net/ethernet.h
+-
+errno.h
+-
 tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 
@@ -97,12 +157,16 @@ sys/ioctl.h
 -
 net/if.h
 -
+argument_parser.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.cpp
 udp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.h
 tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
+argument_parser.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.h
 argument_parser.h

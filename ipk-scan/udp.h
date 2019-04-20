@@ -32,18 +32,18 @@ struct pseudo_header
 class UDP {
 public:
 
-    int CreateRawUdpSocket(const char *interface, std::string name, int port);
+    int CreateRawUdpSocket(Arguments programArguments, int port);
 
-    int CatchUdpPacket(const char *interface, std::string name, int &state);
+    int CatchUdpPacket(Arguments programArguments, int &state);
 
-    void PrepareIpHeader(const char *source_ip, const char *datagram, iphdr *iph, const sockaddr_in &sin) const;
+    void PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin);
 
-    void PrepareUdpHeader(uint16_t port, udphdr *udph) const;
+    void PrepareUdpHeader(uint16_t port, udphdr *udph);
 
     int PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip);
 };
 
-int PrepareForUdpSniffing(const char *interface);
+int PrepareForUdpSniffing(char *interface);
 
 void LoopBreakerUdp(int sig);
 #endif //PROJ2_UDP_H
