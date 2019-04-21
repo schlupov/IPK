@@ -46,7 +46,7 @@ int TCP::PacketHandler(const u_char *packet)
     return 0;
 }
 
-int TCP::CatchPacket(std::string name, int port, int& state)
+void TCP::CatchPacket(std::string name, int port, int& state)
 {
     const u_char *packet;
     bpf_u_int32 netp;
@@ -96,11 +96,9 @@ int TCP::CatchPacket(std::string name, int port, int& state)
 
     pcap_freecode(&fp);
     pcap_close(handle);
-
-    return 42;
 }
 
-int TCP::CreateRawSocket(Arguments programArguments, int port)
+void TCP::CreateRawSocket(Arguments programArguments, int port)
 {
     char datagram[4096];
     char *pseudogram;
@@ -131,7 +129,7 @@ int TCP::CreateRawSocket(Arguments programArguments, int port)
     if (setsockopt (s, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
     {
         perror("Error setting IP_HDRINCL");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     int c = 1;
@@ -144,7 +142,6 @@ int TCP::CreateRawSocket(Arguments programArguments, int port)
 
     free(pseudogram);
     close(s);
-    return 0;
 }
 
 char *TCP::CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
@@ -198,7 +195,7 @@ void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
     tcph->th_urp = 0;
 }
 
-int PrepareForSniffing(char *interface)
+void PrepareForSniffing(char *interface)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
 

@@ -159,7 +159,9 @@ int SendTcpPacket(TCP tcpSocket, int port, Arguments &arguments)
 int SendIpv6Packet(IPV6 ipv6Socket, int port, Arguments &arguments, std::string typeOfPacket)
 {
     int state = 0;
+    PrepareForSniffing(arguments.interface);
     ipv6Socket.CreateRawSocket(arguments, port, typeOfPacket);
+
 
     return state;
 }
