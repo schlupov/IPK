@@ -3,10 +3,11 @@
 */
 
 #include "tcp.h"
+#include "ipv6.h"
 
 pcap_t* handle;
 
-int TCP::PacketHandler(const u_char *packet)
+int PacketHandlerTcp(const u_char *packet)
 {
     int size_ip;
     int size_tcp;
@@ -46,7 +47,7 @@ int TCP::PacketHandler(const u_char *packet)
     return 0;
 }
 
-void TCP::CatchPacket(std::string name, int port, int& state)
+void CatchTcpPacket(std::string name, int port, int &state, std::string typeOfProtocol)
 {
     const u_char *packet;
     bpf_u_int32 netp;
@@ -69,14 +70,22 @@ void TCP::CatchPacket(std::string name, int port, int& state)
 
     while(true) {
         alarm(1);
-        signal(SIGALRM, LoopBreaker);
+        signal(SIGALRM, TcpLoopBreaker);
         packet = pcap_next(handle, &hdr);
 
         if (packet == nullptr) {
             break;
         }
 
-        int code = PacketHandler(packet);
+        int code;
+        if (typeOfProtocol == "ipv4")
+        {
+            code = PacketHandlerTcp(packet);
+        }
+        else
+        {
+            code = PacketHandlerIpv6Tcp(packet);
+        }
 
         if (code == 0)
         {
@@ -98,7 +107,7 @@ void TCP::CatchPacket(std::string name, int port, int& state)
     pcap_close(handle);
 }
 
-void TCP::CreateRawSocket(Arguments programArguments, int port)
+void CreateRawTcpSocket(Arguments programArguments, int port)
 {
     char datagram[4096];
     char *pseudogram;
@@ -122,7 +131,7 @@ void TCP::CreateRawSocket(Arguments programArguments, int port)
     sin.sin_port = htons(1234);
     sin.sin_addr.s_addr = inet_addr (programArguments.ipAddress);
 
-    PrepareIpHeader(programArguments.interfaceIp, datagram, iph, sin);
+    PrepareIpHeaderForTcp(programArguments.interfaceIp, datagram, iph, sin);
     PrepareTcpHeader(tcph, static_cast<uint16_t>(port));
     pseudogram = CalculateTcpChecksum(programArguments.interfaceIp, pseudogram, tcph, sin, psh);
 
@@ -144,7 +153,7 @@ void TCP::CreateRawSocket(Arguments programArguments, int port)
     close(s);
 }
 
-char *TCP::CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
+char *CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
                                 pseudo_header_tcp &psh) {
     psh.source_address = inet_addr(source_ip );
     psh.dest_address = sin.sin_addr.s_addr;
@@ -162,7 +171,7 @@ char *TCP::CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph,
     return pseudogram;
 }
 
-void TCP::PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin) {
+void PrepareIpHeaderForTcp(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin) {
     iph->ihl = 5;
     iph->version = 4;
     iph->tos = 16;
@@ -177,7 +186,8 @@ void TCP::PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_
     iph->check = ComputeCheckSum((unsigned short *) datagram, (sizeof(struct iphdr) + sizeof(struct tcphdr)));
 }
 
-void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
+void PrepareTcpHeader(tcphdr *tcph, uint16_t port)
+{
     tcph->source = htons (1234);
     tcph->dest = htons (port);
     tcph->seq = 0;
@@ -195,7 +205,7 @@ void TCP::PrepareTcpHeader(tcphdr *tcph, uint16_t port) const {
     tcph->th_urp = 0;
 }
 
-void PrepareForSniffing(char *interface)
+void PreparForTcpSniffing(char *interface)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -211,7 +221,7 @@ void PrepareForSniffing(char *interface)
     }
 }
 
-void LoopBreaker(int sig)
+void TcpLoopBreaker(int sig)
 {
     pcap_breakloop(handle);
 }

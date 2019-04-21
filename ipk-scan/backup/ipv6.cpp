@@ -1,54 +1,33 @@
+#include <netinet/ip_icmp.h>
 #include "ipv6.h"
 
-int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string typeOfPacket)
+int CreateRawIpv6Socket(Arguments programArguments, int port, std::string typeOfPacket)
 {
-    int i, status, frame_length, sd, bytes, *tcp_flags;
+    int i, status, frame_length, sd, *tcp_flags;
     struct ip6_hdr iphdr{};
     struct tcphdr tcphdr{};
     struct udphdr udphdr{};
-    uint8_t *src_mac, *dst_mac, *ether_frame;
-    struct addrinfo hints{};
-    struct sockaddr_in6 *ipv6;
-    struct sockaddr_ll device{};
-    struct ifreq ifr{};
-    void *tmp;
+    uint8_t *pseudogram;
+    struct sockaddr_in6 device{};
+    int one = 1;
+    const int *val = &one;
 
-    src_mac = allocate_ustrmem (6);
-    dst_mac = allocate_ustrmem (6);
-    ether_frame = allocate_ustrmem (IP_MAXPACKET);
+    pseudogram = allocate_ustrmem (IP_MAXPACKET);
 
     if (typeOfPacket == "tcp")
     {
         tcp_flags = allocate_intmem (8);
     }
 
-
-    if ((sd = socket (AF_INET6, SOCK_RAW, IPPROTO_RAW)) < 0) {
-        perror ("socket() failed to get socket descriptor for using ioctl() ");
-        exit (EXIT_FAILURE);
-    }
-
-    memset (&ifr, 0, sizeof (ifr));
-    snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", programArguments.interface);
-    if (ioctl (sd, SIOCGIFHWADDR, &ifr) < 0) {
-        perror ("ioctl() failed to get source MAC address ");
-        return (EXIT_FAILURE);
-    }
-    close (sd);
-
-    memcpy (src_mac, ifr.ifr_hwaddr.sa_data, 6 * sizeof (uint8_t));
-
     memset (&device, 0, sizeof (device));
-    if ((device.sll_ifindex = if_nametoindex (programArguments.interface)) == 0) {
-        perror ("if_nametoindex() failed to obtain interface index ");
+
+    device.sin6_family = AF_INET6;
+    device.sin6_port = htons (0);
+    if ((status = inet_pton (AF_INET6, programArguments.ipAddress, &(device.sin6_addr))) != 1)
+    {
+        fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
         exit (EXIT_FAILURE);
     }
-
-
-    device.sll_family = AF_PACKET;
-    device.sll_protocol = htons (ETH_P_IP);
-    memcpy (device.sll_addr, dst_mac, 6 * sizeof (uint8_t));
-    device.sll_halen = 6;
 
     iphdr.ip6_flow = htonl ((6 << 28) | (0 << 20) | 0);
     if (typeOfPacket == "tcp")
@@ -77,28 +56,36 @@ int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string type
 
     if (typeOfPacket == "tcp")
     {
-        frame_length = PrepareTcp(port, tcp_flags, iphdr, tcphdr, ether_frame);
+        frame_length = PrepareIpv6Tcp(port, tcp_flags, iphdr, tcphdr, pseudogram);
+        if ((sd = socket(PF_INET6, SOCK_RAW, IPPROTO_TCP)) < 0) {
+            perror ("socket() failed ");
+            exit (EXIT_FAILURE);
+        }
     }
     else
     {
-        frame_length = PrepareUdp(port, iphdr, udphdr, ether_frame);
+        frame_length = PrepareIpv6Udp(port, iphdr, udphdr, pseudogram);
+        if ((sd = socket(PF_INET6, SOCK_RAW, IPPROTO_UDP)) < 0) {
+            perror ("socket() failed ");
+            exit (EXIT_FAILURE);
+        }
     }
 
-    if ((sd = socket (PF_PACKET, SOCK_DGRAM, htons (ETH_P_ALL))) < 0) {
-        perror ("socket() failed ");
-        exit (EXIT_FAILURE);
+
+    if(setsockopt(sd, IPPROTO_IPV6, IPV6_HDRINCL, val, sizeof(one)) < 0)
+    {
+        perror("Error setting IP_HDRINCL");
+        return 1;
     }
 
-    if ((bytes = sendto (sd, ether_frame, frame_length, 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
+    if ((sendto (sd, pseudogram, frame_length, 0, (struct sockaddr *) &device, sizeof (device))) <= 0) {
         perror ("sendto() failed");
         exit (EXIT_FAILURE);
     }
 
     close (sd);
 
-    free (src_mac);
-    free (dst_mac);
-    free (ether_frame);
+    free (pseudogram);
 
     if (typeOfPacket == "tcp")
     {
@@ -108,7 +95,55 @@ int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string type
     return (EXIT_SUCCESS);
 }
 
-int IPV6::PrepareTcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, uint8_t *ether_frame) {
+int PacketHandlerIpv6Tcp(const u_char *packet)
+{
+    int size_ip;
+    int size_tcp;
+    struct ip6_hdr *iphdr{};
+    const struct sniff_tcp *tcp;
+
+    iphdr = (struct ip6_hdr *) (packet + SIZE_ETHERNET);
+
+    tcp = (struct sniff_tcp *) (packet + SIZE_ETHERNET + IP6_HDRLEN);
+    size_tcp = TH_OFF(tcp) * 4;
+    if (size_tcp < 20) {
+        printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+        return 42;
+    }
+
+    if (tcp->th_flags & TH_RST)
+    {
+        return 1;
+    }
+
+    if (tcp->th_flags & TH_ACK)
+    {
+        return 2;
+    }
+
+    return 0;
+}
+
+int PacketHandlerIpv6Udp(const u_char *packet, char *source_ip, char *receiver_ip)
+{
+    int size_ip;
+    struct ip6_hdr *iphdr{};
+    struct ip6_hdr *iphdr2{};
+    struct icmphdr *icmp;
+    int status;
+
+    iphdr = (struct ip6_hdr *) (packet + SIZE_ETHERNET);
+
+    icmp = (struct icmphdr *)(packet + SIZE_ETHERNET + IP6_HDRLEN);
+
+    if ((icmp->type == 1) && (icmp->code == 4))
+    {
+        return 3;
+    }
+    return 4;
+}
+
+int PrepareIpv6Tcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, uint8_t *pseudogram) {
     int frame_length;
     tcphdr.th_sport = htons (1234);
     tcphdr.th_dport = htons (static_cast<uint16_t>(port));
@@ -136,12 +171,12 @@ int IPV6::PrepareTcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, u
     tcphdr.th_sum = tcp6_checksum(iphdr, tcphdr);
 
     frame_length = IP6_HDRLEN + TCP_HDRLEN;
-    memcpy (ether_frame, &iphdr, IP6_HDRLEN * sizeof (uint8_t));
-    memcpy (ether_frame + IP6_HDRLEN, &tcphdr, TCP_HDRLEN * sizeof (uint8_t));
+    memcpy (pseudogram, &iphdr, IP6_HDRLEN * sizeof (uint8_t));
+    memcpy (pseudogram + IP6_HDRLEN, &tcphdr, TCP_HDRLEN * sizeof (uint8_t));
     return frame_length;
 }
 
-int IPV6::PrepareUdp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *ether_frame) {
+int PrepareIpv6Udp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *pseudogram) {
     int frame_length;
     udphdr.source = htons (1234);
     udphdr.dest = htons (port);
@@ -149,12 +184,12 @@ int IPV6::PrepareUdp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *ether_fr
     udphdr.check = udp6_checksum(iphdr, udphdr);
 
     frame_length = IP6_HDRLEN + UDP_HDRLEN;
-    memcpy (ether_frame, &iphdr, IP6_HDRLEN * sizeof (uint8_t));
-    memcpy (ether_frame + IP6_HDRLEN, &udphdr, UDP_HDRLEN * sizeof (uint8_t));
+    memcpy (pseudogram, &iphdr, IP6_HDRLEN * sizeof (uint8_t));
+    memcpy (pseudogram + IP6_HDRLEN, &udphdr, UDP_HDRLEN * sizeof (uint8_t));
     return frame_length;
 }
 
-uint16_t IPV6::checksum (uint16_t *addr, int len)
+uint16_t ComputeIpv6Checksum(uint16_t *addr, int len)
 {
     int count = len;
     register uint32_t sum = 0;
@@ -178,21 +213,7 @@ uint16_t IPV6::checksum (uint16_t *addr, int len)
     return (answer);
 }
 
-char *IPV6::allocate_strmem (int len)
-{
-    char *tmp;
-
-    tmp = (char *) malloc (len * sizeof (char));
-    if (tmp != NULL) {
-        memset (tmp, 0, len * sizeof (char));
-        return (tmp);
-    } else {
-        fprintf (stderr, "ERROR: Cannot allocate memory for array allocate_strmem().\n");
-        exit (EXIT_FAILURE);
-    }
-}
-
-uint8_t *IPV6::allocate_ustrmem (int len)
+uint8_t *allocate_ustrmem (int len)
 {
     uint8_t *tmp;
 
@@ -206,7 +227,7 @@ uint8_t *IPV6::allocate_ustrmem (int len)
     }
 }
 
-int *IPV6::allocate_intmem (int len)
+int *allocate_intmem (int len)
 {
     int *tmp;
 
@@ -220,7 +241,7 @@ int *IPV6::allocate_intmem (int len)
     }
 }
 
-uint16_t IPV6::tcp6_checksum (struct ip6_hdr iphdr, struct tcphdr tcphdr)
+uint16_t tcp6_checksum (struct ip6_hdr iphdr, struct tcphdr tcphdr)
 {
     uint32_t lvalue;
     char buf[IP_MAXPACKET], cvalue;
@@ -288,10 +309,10 @@ uint16_t IPV6::tcp6_checksum (struct ip6_hdr iphdr, struct tcphdr tcphdr)
     ptr += sizeof (tcphdr.th_urp);
     chksumlen += sizeof (tcphdr.th_urp);
 
-    return checksum ((uint16_t *) buf, chksumlen);
+    return ComputeIpv6Checksum((uint16_t *) buf, chksumlen);
 }
 
-uint16_t IPV6::udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr) {
+uint16_t udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr) {
     char buf[IP_MAXPACKET];
     char *ptr;
     int chksumlen = 0;
@@ -340,12 +361,12 @@ uint16_t IPV6::udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr) {
     ptr += sizeof (udphdr.len);
     chksumlen += sizeof (udphdr.len);
 
-    // Copy UDP checksum to buf (16 bits)
+    // Copy UDP ComputeIpv6Checksum to buf (16 bits)
     // Zero, since we don't know it yet
     *ptr = 0; ptr++;
     *ptr = 0; ptr++;
     chksumlen += 2;
 
 
-    return checksum ((uint16_t *) buf, chksumlen);
+    return ComputeIpv6Checksum((uint16_t *) buf, chksumlen);
 }

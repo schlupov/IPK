@@ -5,10 +5,11 @@
 #include "udp.h"
 #include "tcp.h"
 #include "argument_parser.h"
+#include "ipv6.h"
 
 pcap_t* handler;
 
-int UDP::PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip)
+int PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip)
 {
     int size_ip;
     struct sniff_ip *ip;
@@ -40,7 +41,7 @@ int UDP::PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_
     return 4;
 }
 
-int UDP::CatchUdpPacket(Arguments programArguments, int &state)
+int CatchUdpPacket(Arguments programArguments, int &state, std::string typeOfProtocol)
 {
     const u_char *packet;
     bpf_u_int32 netp;
@@ -70,7 +71,15 @@ int UDP::CatchUdpPacket(Arguments programArguments, int &state)
             break;
         }
 
-        int code = PacketUdpHandler(packet, programArguments.interfaceIp, programArguments.ipAddress);
+        int code;
+        if (typeOfProtocol == "ipv4")
+        {
+            code = PacketUdpHandler(packet, programArguments.interfaceIp, programArguments.ipAddress);
+        }
+        else
+        {
+            code = PacketHandlerIpv6Udp(packet, programArguments.interfaceIp, programArguments.ipAddress);
+        }
 
         if (code == 3)
         {
@@ -89,7 +98,7 @@ int UDP::CatchUdpPacket(Arguments programArguments, int &state)
     return 42;
 }
 
-int UDP::CreateRawUdpSocket(Arguments programArguments, int port)
+int CreateRawUdpSocket(Arguments programArguments, int port)
 {
     char datagram[4096];
     int one = 1;
@@ -111,7 +120,7 @@ int UDP::CreateRawUdpSocket(Arguments programArguments, int port)
     sin.sin_port = htons(1234);
     sin.sin_addr.s_addr = inet_addr (programArguments.ipAddress);
 
-    PrepareIpHeader(programArguments.interfaceIp, datagram, iph, sin);
+    PrepareIpHeaderForUdp(programArguments.interfaceIp, datagram, iph, sin);
     PrepareUdpHeader(static_cast<uint16_t>(port), udph);
 
     if (setsockopt (s, IPPROTO_IP, IP_HDRINCL, val, sizeof (one)) < 0)
@@ -134,14 +143,14 @@ int UDP::CreateRawUdpSocket(Arguments programArguments, int port)
     return 0;
 }
 
-void UDP::PrepareUdpHeader(uint16_t port, udphdr *udph)
+void PrepareUdpHeader(uint16_t port, udphdr *udph)
 {
     udph->source = htons (1234);
     udph->dest = htons (port);
     udph->len = htons(sizeof(struct udphdr));
 }
 
-void UDP::PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin)
+void PrepareIpHeaderForUdp(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin)
 {
     iph->ihl = 5;
     iph->version = 4;

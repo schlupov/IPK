@@ -1,6 +1,7 @@
+#include <netinet/ip_icmp.h>
 #include "ipv6.h"
 
-int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string typeOfPacket)
+int CreateRawIpv6Socket(Arguments programArguments, int port, std::string typeOfPacket)
 {
     int i, status, frame_length, sd, *tcp_flags;
     struct ip6_hdr iphdr{};
@@ -55,7 +56,7 @@ int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string type
 
     if (typeOfPacket == "tcp")
     {
-        frame_length = PrepareTcp(port, tcp_flags, iphdr, tcphdr, pseudogram);
+        frame_length = PrepareIpv6Tcp(port, tcp_flags, iphdr, tcphdr, pseudogram);
         if ((sd = socket(PF_INET6, SOCK_RAW, IPPROTO_TCP)) < 0) {
             perror ("socket() failed ");
             exit (EXIT_FAILURE);
@@ -63,7 +64,7 @@ int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string type
     }
     else
     {
-        frame_length = PrepareUdp(port, iphdr, udphdr, pseudogram);
+        frame_length = PrepareIpv6Udp(port, iphdr, udphdr, pseudogram);
         if ((sd = socket(PF_INET6, SOCK_RAW, IPPROTO_UDP)) < 0) {
             perror ("socket() failed ");
             exit (EXIT_FAILURE);
@@ -94,7 +95,55 @@ int IPV6::CreateRawSocket(Arguments programArguments, int port, std::string type
     return (EXIT_SUCCESS);
 }
 
-int IPV6::PrepareTcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, uint8_t *pseudogram) {
+int PacketHandlerIpv6Tcp(const u_char *packet)
+{
+    int size_ip;
+    int size_tcp;
+    struct ip6_hdr *iphdr{};
+    const struct sniff_tcp *tcp;
+
+    iphdr = (struct ip6_hdr *) (packet + SIZE_ETHERNET);
+
+    tcp = (struct sniff_tcp *) (packet + SIZE_ETHERNET + IP6_HDRLEN);
+    size_tcp = TH_OFF(tcp) * 4;
+    if (size_tcp < 20) {
+        printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
+        return 42;
+    }
+
+    if (tcp->th_flags & TH_RST)
+    {
+        return 1;
+    }
+
+    if (tcp->th_flags & TH_ACK)
+    {
+        return 2;
+    }
+
+    return 0;
+}
+
+int PacketHandlerIpv6Udp(const u_char *packet, char *source_ip, char *receiver_ip)
+{
+    int size_ip;
+    struct ip6_hdr *iphdr{};
+    struct ip6_hdr *iphdr2{};
+    struct icmphdr *icmp;
+    int status;
+
+    iphdr = (struct ip6_hdr *) (packet + SIZE_ETHERNET);
+
+    icmp = (struct icmphdr *)(packet + SIZE_ETHERNET + IP6_HDRLEN);
+
+    if ((icmp->type == 1) && (icmp->code == 4))
+    {
+        return 3;
+    }
+    return 4;
+}
+
+int PrepareIpv6Tcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, uint8_t *pseudogram) {
     int frame_length;
     tcphdr.th_sport = htons (1234);
     tcphdr.th_dport = htons (static_cast<uint16_t>(port));
@@ -127,7 +176,7 @@ int IPV6::PrepareTcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, u
     return frame_length;
 }
 
-int IPV6::PrepareUdp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *pseudogram) {
+int PrepareIpv6Udp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *pseudogram) {
     int frame_length;
     udphdr.source = htons (1234);
     udphdr.dest = htons (port);
@@ -140,7 +189,7 @@ int IPV6::PrepareUdp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *pseudogr
     return frame_length;
 }
 
-uint16_t IPV6::checksum (uint16_t *addr, int len)
+uint16_t ComputeIpv6Checksum(uint16_t *addr, int len)
 {
     int count = len;
     register uint32_t sum = 0;
@@ -164,7 +213,7 @@ uint16_t IPV6::checksum (uint16_t *addr, int len)
     return (answer);
 }
 
-uint8_t *IPV6::allocate_ustrmem (int len)
+uint8_t *allocate_ustrmem (int len)
 {
     uint8_t *tmp;
 
@@ -178,7 +227,7 @@ uint8_t *IPV6::allocate_ustrmem (int len)
     }
 }
 
-int *IPV6::allocate_intmem (int len)
+int *allocate_intmem (int len)
 {
     int *tmp;
 
@@ -192,7 +241,7 @@ int *IPV6::allocate_intmem (int len)
     }
 }
 
-uint16_t IPV6::tcp6_checksum (struct ip6_hdr iphdr, struct tcphdr tcphdr)
+uint16_t tcp6_checksum (struct ip6_hdr iphdr, struct tcphdr tcphdr)
 {
     uint32_t lvalue;
     char buf[IP_MAXPACKET], cvalue;
@@ -260,10 +309,10 @@ uint16_t IPV6::tcp6_checksum (struct ip6_hdr iphdr, struct tcphdr tcphdr)
     ptr += sizeof (tcphdr.th_urp);
     chksumlen += sizeof (tcphdr.th_urp);
 
-    return checksum ((uint16_t *) buf, chksumlen);
+    return ComputeIpv6Checksum((uint16_t *) buf, chksumlen);
 }
 
-uint16_t IPV6::udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr) {
+uint16_t udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr) {
     char buf[IP_MAXPACKET];
     char *ptr;
     int chksumlen = 0;
@@ -312,12 +361,12 @@ uint16_t IPV6::udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr) {
     ptr += sizeof (udphdr.len);
     chksumlen += sizeof (udphdr.len);
 
-    // Copy UDP checksum to buf (16 bits)
+    // Copy UDP ComputeIpv6Checksum to buf (16 bits)
     // Zero, since we don't know it yet
     *ptr = 0; ptr++;
     *ptr = 0; ptr++;
     chksumlen += 2;
 
 
-    return checksum ((uint16_t *) buf, chksumlen);
+    return ComputeIpv6Checksum((uint16_t *) buf, chksumlen);
 }

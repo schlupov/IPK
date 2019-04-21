@@ -17,10 +17,12 @@ CMakeFiles/ipk-scan.dir/ipv6.cpp.o: ../ipv6.h
 CMakeFiles/ipk-scan.dir/ipv6.cpp.o: ../tcp.h
 
 CMakeFiles/ipk-scan.dir/tcp.cpp.o: ../argument_parser.h
+CMakeFiles/ipk-scan.dir/tcp.cpp.o: ../ipv6.h
 CMakeFiles/ipk-scan.dir/tcp.cpp.o: ../tcp.cpp
 CMakeFiles/ipk-scan.dir/tcp.cpp.o: ../tcp.h
 
 CMakeFiles/ipk-scan.dir/udp.cpp.o: ../argument_parser.h
+CMakeFiles/ipk-scan.dir/udp.cpp.o: ../ipv6.h
 CMakeFiles/ipk-scan.dir/udp.cpp.o: ../tcp.h
 CMakeFiles/ipk-scan.dir/udp.cpp.o: ../udp.cpp
 CMakeFiles/ipk-scan.dir/udp.cpp.o: ../udp.h

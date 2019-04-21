@@ -61,6 +61,8 @@ ipv6.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.cpp
+netinet/ip_icmp.h
+-
 ipv6.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
 
@@ -111,6 +113,8 @@ tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.cpp
 tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
+ipv6.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 argument_parser.h
@@ -167,6 +171,8 @@ tcp.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 argument_parser.h
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
+ipv6.h
+/home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
 
 /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.h
 argument_parser.h

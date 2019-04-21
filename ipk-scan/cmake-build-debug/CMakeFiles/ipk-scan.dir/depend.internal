@@ -18,10 +18,12 @@ CMakeFiles/ipk-scan.dir/ipv6.cpp.o
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 CMakeFiles/ipk-scan.dir/tcp.cpp.o
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
+ /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.cpp
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
 CMakeFiles/ipk-scan.dir/udp.cpp.o
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/argument_parser.h
+ /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/ipv6.h
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/tcp.h
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.cpp
  /home/schlupov/school/ctvrty_semestr/IPK/ipk-scan/udp.h

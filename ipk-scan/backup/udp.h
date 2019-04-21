@@ -29,19 +29,15 @@ struct pseudo_header
     u_int16_t udp_length;
 };
 
-class UDP {
-public:
+int CreateRawUdpSocket(Arguments programArguments, int port);
 
-    int CreateRawUdpSocket(Arguments programArguments, int port);
+int CatchUdpPacket(Arguments programArguments, int &state, std::string typeOfProtocol);
 
-    int CatchUdpPacket(Arguments programArguments, int &state);
+void PrepareIpHeaderForUdp(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin);
 
-    void PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin);
+void PrepareUdpHeader(uint16_t port, udphdr *udph);
 
-    void PrepareUdpHeader(uint16_t port, udphdr *udph);
-
-    int PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip);
-};
+int PacketUdpHandler(const u_char *packet, char *source_ip, char *receiver_ip);
 
 int PrepareForUdpSniffing(char *interface);
 

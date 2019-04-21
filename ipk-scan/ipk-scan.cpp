@@ -5,14 +5,14 @@
 #include "tcp.h"
 #include "ipv6.h"
 
-int SendUdpPacket(UDP udpSocket, int port, Arguments &arguments);
-int SendTcpPacket(TCP tcpSocket, int port, Arguments &arguments);
+int SendUdpPacket(int port, Arguments &arguments);
+int SendTcpPacket(int port, Arguments &arguments);
 void PrintPrinterHeader(Arguments arguments);
 void PrintFinalPortState(int port, int state);
-void ProcessTcpPackets(Arguments &arguments, TCP &tcpSocket, int i);
-void ProcessUdpPackets(Arguments &arguments, UDP &udpSocket, int &i);
-int SendIpv6Packet(IPV6 ipv6Socket, int port, Arguments &arguments, std::string typeOfPacket);
-void ProcessIpv6Packets(Arguments &arguments, IPV6 &ipv6Socket, int i, std::string typeOfPacket);
+void ProcessTcpPackets(Arguments &arguments,int i);
+void ProcessUdpPackets(Arguments &arguments, int &i);
+int SendIpv6Packet(int port, Arguments &arguments, std::string typeOfPacket);
+void ProcessIpv6Packets(Arguments &arguments, int i, std::string typeOfPacket);
 
 int main(int argc, char **argv)
 {
@@ -22,9 +22,6 @@ int main(int argc, char **argv)
     std::list <int> tcpPorts;
     bool isDashInTcpPorts = false;
     bool isDashInUdpPorts = false;
-    TCP tcpSocket;
-    IPV6 ipv6Socket;
-    UDP udpSocket;
     std::list <int> udpPorts;
 
     arguments.GetUDPPorts(udpPorts, isDashInUdpPorts);
@@ -41,13 +38,13 @@ int main(int argc, char **argv)
             int end = tcpPorts.back();
             for (int i=begin;i<end+1;i++)
             {
-                ProcessTcpPackets(arguments, tcpSocket, i);
+                ProcessTcpPackets(arguments, i);
             }
         }
         else
         {
             for (int& i : tcpPorts) {
-                ProcessTcpPackets(arguments, tcpSocket, i);
+                ProcessTcpPackets(arguments, i);
             }
         }
 
@@ -57,13 +54,13 @@ int main(int argc, char **argv)
             int end = udpPorts.back();
             for (int i=begin;i<end+1;i++)
             {
-                ProcessUdpPackets(arguments, udpSocket, i);
+                ProcessUdpPackets(arguments, i);
             }
         }
         else
         {
             for (int& i : udpPorts) {
-                ProcessUdpPackets(arguments, udpSocket, i);
+                ProcessUdpPackets(arguments, i);
             }
         }
     }
@@ -75,13 +72,13 @@ int main(int argc, char **argv)
             int end = tcpPorts.back();
             for (int i=begin;i<end+1;i++)
             {
-                ProcessIpv6Packets(arguments, ipv6Socket, i, "tcp");
+                ProcessIpv6Packets(arguments, i, "tcp");
             }
         }
         else
         {
             for (int& i : tcpPorts) {
-                ProcessIpv6Packets(arguments, ipv6Socket, i, "tcp");
+                ProcessIpv6Packets(arguments, i, "tcp");
             }
         }
 
@@ -91,13 +88,13 @@ int main(int argc, char **argv)
             int end = udpPorts.back();
             for (int i=begin;i<end+1;i++)
             {
-                ProcessIpv6Packets(arguments, ipv6Socket, i, "udp");
+                ProcessIpv6Packets(arguments, i, "udp");
             }
         }
         else
         {
             for (int& i : udpPorts) {
-                ProcessIpv6Packets(arguments, ipv6Socket, i, "udp");
+                ProcessIpv6Packets(arguments, i, "udp");
             }
         }
     }
@@ -106,25 +103,29 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ProcessUdpPackets(Arguments &arguments, UDP &udpSocket, int &i)
+void ProcessUdpPackets(Arguments &arguments, int &i)
 {
     int status;
-    status = SendUdpPacket(udpSocket, i, arguments);
+    status = SendUdpPacket(i, arguments);
     PrintFinalPortState(i, status);
 }
 
-void ProcessTcpPackets(Arguments &arguments, TCP &tcpSocket, int i)
+void ProcessTcpPackets(Arguments &arguments, int i)
 {
-    int status = SendTcpPacket(tcpSocket, i, arguments);
+    int status = SendTcpPacket(i, arguments);
     if (status == 0) {
-        status = SendTcpPacket(tcpSocket, i, arguments);
+        status = SendTcpPacket(i, arguments);
     }
     PrintFinalPortState(i, status);
 }
 
-void ProcessIpv6Packets(Arguments &arguments, IPV6 &ipv6Socket, int i, std::string typeOfPacket)
+void ProcessIpv6Packets(Arguments &arguments, int i, std::string typeOfPacket)
 {
-    SendIpv6Packet(ipv6Socket, i, arguments, typeOfPacket);
+    int status = SendIpv6Packet(i, arguments, typeOfPacket);
+    if (status == 0) {
+        status = SendIpv6Packet(i, arguments, typeOfPacket);
+    }
+    PrintFinalPortState(i, status);
 }
 
 
@@ -136,32 +137,41 @@ void PrintPrinterHeader(Arguments arguments)
     << std::endl;
 }
 
-int SendUdpPacket(UDP udpSocket, int port, Arguments &arguments)
+int SendUdpPacket(int port, Arguments &arguments)
 {
     int state = 4;
     PrepareForUdpSniffing(arguments.interface);
-    udpSocket.CreateRawUdpSocket(arguments, port);
-    udpSocket.CatchUdpPacket(arguments, state);
+    CreateRawUdpSocket(arguments, port);
+    CatchUdpPacket(arguments, state, "ipv4");
 
     return state;
 }
 
-int SendTcpPacket(TCP tcpSocket, int port, Arguments &arguments)
+int SendTcpPacket(int port, Arguments &arguments)
 {
     int state = 0;
-    PrepareForSniffing(arguments.interface);
-    tcpSocket.CreateRawSocket(arguments, port);
-    tcpSocket.CatchPacket(arguments.name, port, state);
+    PreparForTcpSniffing(arguments.interface);
+    CreateRawTcpSocket(arguments, port);
+    CatchTcpPacket(arguments.name, port, state, "ipv4");
 
     return state;
 }
 
-int SendIpv6Packet(IPV6 ipv6Socket, int port, Arguments &arguments, std::string typeOfPacket)
+int SendIpv6Packet(int port, Arguments &arguments, std::string typeOfPacket)
 {
     int state = 0;
-    PrepareForSniffing(arguments.interface);
-    ipv6Socket.CreateRawSocket(arguments, port, typeOfPacket);
-
+    if (typeOfPacket == "tcp")
+    {
+        PreparForTcpSniffing(arguments.interface);
+        CreateRawIpv6Socket(arguments, port, typeOfPacket);
+        CatchTcpPacket(arguments.name, port, state, "ipv6");
+    }
+    else
+    {
+        PrepareForUdpSniffing(arguments.interface);
+        CreateRawIpv6Socket(arguments, port, typeOfPacket);
+        CatchUdpPacket(arguments, state, "ipv6");
+    }
 
     return state;
 }

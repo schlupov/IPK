@@ -26,25 +26,24 @@
 #define TCP_HDRLEN 20  // TCP header length, excludes options data
 #define UDP_HDRLEN  8         // UDP header length, excludes data
 
-class IPV6 {
-public:
+int CreateRawIpv6Socket(Arguments programArguments, int port, std::string typeOfPacket);
 
-    int CreateRawSocket(Arguments programArguments, int port, std::string typeOfPacket);
+uint16_t tcp6_checksum (struct ip6_hdr, struct tcphdr);
 
-    uint16_t tcp6_checksum (struct ip6_hdr, struct tcphdr);
+uint16_t udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr);
 
-    uint16_t udp6_checksum (struct ip6_hdr iphdr, struct udphdr udphdr);
+int PrepareIpv6Tcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, uint8_t *ether_frame);
 
-    int PrepareTcp(int port, int *tcp_flags, ip6_hdr &iphdr, tcphdr &tcphdr, uint8_t *ether_frame);
+int PrepareIpv6Udp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *ether_frame);
 
-    int PrepareUdp(int port, ip6_hdr &iphdr, udphdr &udphdr, uint8_t *ether_frame);
+uint8_t *allocate_ustrmem (int);
 
-    char *allocate_strmem (int);
+int *allocate_intmem (int);
 
-    uint8_t *allocate_ustrmem (int);
+uint16_t ComputeIpv6Checksum(uint16_t *, int);
 
-    int *allocate_intmem (int);
+int PacketHandlerIpv6Tcp(const u_char *packet);
 
-    uint16_t checksum (uint16_t *, int);
-};
+int PacketHandlerIpv6Udp(const u_char *packet, char *source_ip, char *receiver_ip);
+
 #endif //IPK_SCAN_TCP6_H

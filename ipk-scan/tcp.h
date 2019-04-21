@@ -38,82 +38,76 @@ struct pseudo_header_tcp
     u_int16_t tcp_length;
 };
 
-/**
- * Třída reprezentující TCP paket a usnadňující práci s ním.
- */
-class TCP {
-public:
-
-    /**
-     * Metoda slouží k vytvoření raw soketu a k jeho odeslání.
-     *
-     * @param programArguments Argumenty programu, jsou potřeba pro vyplění
-     *                          ip a tcp hlavičky a soketu.
-     * @param port Číslo portu, kam bude soket poslán.
-     */
-    void CreateRawSocket(Arguments programArguments, int port);
-
-    /**
-     * Metoda slouží ke ze zpracování zachyceného paketu.
-     * Metoda si zjistí ip hlavičku a tcp hlavičku. Z ip hlavičky se ověří,
-     * že se jedná o TCP paket a pokud ano, tak jsou ověřeny příznaky ACK a RST,
-     * které informují, jestli byl port otevřen nebo uzavřen.
-     *
-     * @param packet Zachycený paket.
-     * @return Vrací číslo na základě toho, jestli byly příslušné flagy v paketu nastaveny
-     *          nebo nejedná-li se o TCP paket.
-     */
-    int PacketHandler(const u_char *packet);
-
-    /**
-     * Metoda nastavuje filtr a zachytává příchozí pakety.
-     *
-     * @param name Jméno hosta od kterého čekáme příchod paketu.
-     * @param port Číslo portu, ze kterého má paket přijít.
-     * @param state Proměnná informuje volající funkci, jestli byl zachycen paket a jaké měl
-     *              nastavené příznaky.
-     */
-    void CatchPacket(std::string name, int port, int& state);
-
-    /**
-     * Pomocná metoda nastavující jenodnotlivé části TCP paketu před jeho odesláním.
-     *
-     * @param tcph Struktura TCP paketu, která bude vyplněna.
-     * @param port Číslo portu, kam bude soket poslán.
-     */
-    void PrepareTcpHeader(tcphdr *tcph, uint16_t port) const;
-
-    /**
-     * Pomocná metoda nastavující jenodnotlivé části IP hlavičky.
-     *
-     * @param source_ip Zdrojová IP adresa
-     * @param datagram Datagram pro vypočet kontrolního součtu
-     * @param iph Struktura IP datagramu, která bude vyplněna.
-     * @param sin Struktura pro IP adresu soketu.
-     */
-    void PrepareIpHeader(char *source_ip, char *datagram, iphdr *iph,  sockaddr_in &sin);
-
-    /**
-     * Metoda pro vypočet kontrolního součtu pro TCP paket.
-     *
-     * @param source_ip Zdrojová IP adresa.
-     * @param pseudogram Pomocný ukazatel rpo výpočet kontrolního součtu.
-     * @param tcph Struktura TCP paketu, která bude vyplněna.
-     * @param sin Struktura pro IP adresu soketu.
-     * @param psh Pomocná struktrua pro práci s TCP paketemm.
-     */
-    char *CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
-                               pseudo_header_tcp &psh);
-};
-
 #define SIZE_ETHERNET 14 ///< Velikost ethernetové hlavičky
+
+
+/**
+ * Metoda slouží k vytvoření raw soketu a k jeho odeslání.
+ *
+ * @param programArguments Argumenty programu, jsou potřeba pro vyplění
+ *                          ip a tcp hlavičky a soketu.
+ * @param port Číslo portu, kam bude soket poslán.
+ */
+void CreateRawTcpSocket(Arguments programArguments, int port);
+
+/**
+ * Metoda slouží ke ze zpracování zachyceného paketu.
+ * Metoda si zjistí ip hlavičku a tcp hlavičku. Z ip hlavičky se ověří,
+ * že se jedná o TCP paket a pokud ano, tak jsou ověřeny příznaky ACK a RST,
+ * které informují, jestli byl port otevřen nebo uzavřen.
+ *
+ * @param packet Zachycený paket.
+ * @return Vrací číslo na základě toho, jestli byly příslušné flagy v paketu nastaveny
+ *          nebo nejedná-li se o TCP paket.
+ */
+int PacketHandlerTcp(const u_char *packet);
+
+/**
+ * Metoda nastavuje filtr a zachytává příchozí pakety.
+ *
+ * @param name Jméno hosta od kterého čekáme příchod paketu.
+ * @param port Číslo portu, ze kterého má paket přijít.
+ * @param state Proměnná informuje volající funkci, jestli byl zachycen paket a jaké měl
+ *              nastavené příznaky.
+ */
+void CatchTcpPacket(std::string name, int port, int &state, std::string typeOfProtocol);
+
+/**
+ * Pomocná metoda nastavující jenodnotlivé části TCP paketu před jeho odesláním.
+ *
+ * @param tcph Struktura TCP paketu, která bude vyplněna.
+ * @param port Číslo portu, kam bude soket poslán.
+ */
+void PrepareTcpHeader(tcphdr *tcph, uint16_t port);
+
+/**
+ * Pomocná metoda nastavující jenodnotlivé části IP hlavičky.
+ *
+ * @param source_ip Zdrojová IP adresa
+ * @param datagram Datagram pro vypočet kontrolního součtu
+ * @param iph Struktura IP datagramu, která bude vyplněna.
+ * @param sin Struktura pro IP adresu soketu.
+ */
+void PrepareIpHeaderForTcp(char *source_ip, char *datagram, iphdr *iph, sockaddr_in &sin);
+
+/**
+ * Metoda pro vypočet kontrolního součtu pro TCP paket.
+ *
+ * @param source_ip Zdrojová IP adresa.
+ * @param pseudogram Pomocný ukazatel rpo výpočet kontrolního součtu.
+ * @param tcph Struktura TCP paketu, která bude vyplněna.
+ * @param sin Struktura pro IP adresu soketu.
+ * @param psh Pomocná struktrua pro práci s TCP paketemm.
+ */
+char *CalculateTcpChecksum(char *source_ip, char *pseudogram, tcphdr *tcph, sockaddr_in &sin,
+                           pseudo_header_tcp &psh);
 
 /**
  * Funkce připravuje prostředí pro odchytávání paketů.
  *
  * @param interface Rozhraní na kterém se budou pakety odchytávat.
  */
-void PrepareForSniffing(char *interface);
+void PreparForTcpSniffing(char *interface);
 
 /**
  * Funkce pro výpočet kontrolního součtu.
@@ -129,7 +123,7 @@ unsigned short ComputeCheckSum(unsigned short *buffer, int size);
  *
  * @param sig Signál, který může funkce obdržet.
  */
-void LoopBreaker(int sig);
+void TcpLoopBreaker(int sig);
 
 /**
  * Pomocná struktura pro práci se zachycenými pakety.
